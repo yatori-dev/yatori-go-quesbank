@@ -1,4 +1,6 @@
-./idea
-./*.db
-./config.yml
-./config.yaml
+/.idea
+/config.yaml
+/config.yml
+/ques-core/localq/qbank.db
+/qbank.db
+*.exe

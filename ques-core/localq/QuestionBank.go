@@ -13,12 +13,12 @@ import (
 )
 
 // 题库缓存初始化
-func QuestionBackInit() (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open("questionbank.db"), &gorm.Config{})
+func QuestionBankInit() (*gorm.DB, error) {
+	db, err := gorm.Open(sqlite.Open("qbank.db"), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
-	err = db.AutoMigrate(&entity.Question{})
+	err = db.AutoMigrate(&entity.DataQuestion{})
 	if err != nil {
 		return nil, err
 	}
