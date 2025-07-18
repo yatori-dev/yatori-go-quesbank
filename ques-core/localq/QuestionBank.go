@@ -7,6 +7,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"log"
+	"log/slog"
 	"time"
 	"yatori-go-quesbank/ques-core/entity"
 )
@@ -82,6 +83,32 @@ func SelectForTypeAndContent(db *gorm.DB, question *entity.DataQuestion) *entity
 		log.Fatalf("查询数据失败: %v", err)
 	}
 	return &qu
+}
+
+// 根据题目类型和内容查询题目
+func SelectForTypeAndLikeContent1_4(db *gorm.DB, question *entity.DataQuestion) *entity.DataQuestion {
+	var qu entity.DataQuestion
+	if len(question.Content) < 10 {
+		if err := db.First(&qu, "type = ? AND content = ?", question.Type, question.Content).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return nil
+			}
+			log.Fatalf("查询数据失败: %v", err)
+		}
+		return &qu
+	} else {
+		runes := []rune(question.Content)
+		slog.Debug(string(runes[2 : len(runes)-5]))
+
+		if err := db.Where("type = ? AND content like ?", question.Type, "%"+string(runes[2:len(runes)-5])+"%").First(&qu).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return nil
+			}
+			log.Fatalf("查询数据失败: %v", err)
+		}
+		return &qu
+	}
+
 }
 
 // 根据题目MD5查询

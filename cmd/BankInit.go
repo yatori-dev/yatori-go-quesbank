@@ -41,7 +41,7 @@ func ConfigInit() {
 
 // 数据库初始化
 func DBInit() {
-	db, err := gorm.Open(sqlite.Open("localq.db"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("qbank.db"), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
