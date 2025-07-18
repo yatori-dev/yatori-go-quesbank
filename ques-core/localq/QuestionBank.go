@@ -14,7 +14,7 @@ import (
 
 // 题库缓存初始化
 func QuestionBankInit() (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open("qbank.db"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("luyao.db"), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}

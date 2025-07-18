@@ -2,5 +2,6 @@
 /config.yaml
 /config.yml
 /ques-core/localq/qbank.db
-/qbank.db
+/*.db
+/db
 *.exe

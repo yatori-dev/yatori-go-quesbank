@@ -6,9 +6,11 @@ import (
 	"gorm.io/gorm"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"time"
 	api_server "yatori-go-quesbank/cmd/api-server"
 	"yatori-go-quesbank/global"
+	"yatori-go-quesbank/utils"
 
 	"yatori-go-quesbank/config"
 	"yatori-go-quesbank/ques-core/entity"
@@ -17,10 +19,10 @@ import (
 // 初始化
 func BankInit() {
 	LogInit()
-	fmt.Println(config.YatoriLogo()) //打印LOGO
-	ConfigInit()                     //初始化配置文件读取
-	DBInit()                         //初始化数据库
-	ServerInit()                     //初始化服务器
+	fmt.Println(config.YatoriLogo())                               //打印LOGO
+	ConfigInit()                                                   //初始化配置文件读取
+	DBInit(global.GlobalConfig.Setting.BasicSetting.DefaultDBPath) //初始化数据库
+	ServerInit()                                                   //初始化服务器
 }
 
 // 日志系统初始化
@@ -40,8 +42,9 @@ func ConfigInit() {
 }
 
 // 数据库初始化
-func DBInit() {
-	db, err := gorm.Open(sqlite.Open("qbank.db"), &gorm.Config{})
+func DBInit(path string) {
+	utils.PathExistForCreate(filepath.Dir(path)) //检测目录是否存在，不存在则创建
+	db, err := gorm.Open(sqlite.Open(path), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
@@ -57,8 +60,7 @@ func DBInit() {
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
-
-	global.GlobalDB = db
+	global.GlobalDBMap[path] = db
 }
 
 // 初始化gin

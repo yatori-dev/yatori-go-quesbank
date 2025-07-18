@@ -16,8 +16,9 @@ type JSONDataForConfig struct {
 	Setting Setting `json:"setting"`
 }
 type BasicSetting struct {
-	LogOutFileSw int    `json:"logOutFileSw,omitempty" yaml:"logOutFileSw"` //是否输出日志文件0代表不输出，1代表输出，默认为1
-	LogLevel     string `json:"logLevel,omitempty" yaml:"logLevel"`         //日志等级，默认INFO，DEBUG为找BUG调式用的，日志内容较详细，默认为INFO
+	LogOutFileSw  int    `json:"logOutFileSw,omitempty" yaml:"logOutFileSw"` //是否输出日志文件0代表不输出，1代表输出，默认为1
+	LogLevel      string `json:"logLevel,omitempty" yaml:"logLevel"`         //日志等级，默认INFO，DEBUG为找BUG调式用的，日志内容较详细，默认为INFO
+	DefaultDBPath string `json:"defaultDBPath,omitempty" yaml:"defaultDBPath"`
 }
 
 type LocalSetting struct {

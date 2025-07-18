@@ -9,6 +9,7 @@ import (
 	"yatori-go-quesbank/ques-core/entity"
 	"yatori-go-quesbank/ques-core/externalq/yanxi"
 	questionbank "yatori-go-quesbank/ques-core/localq"
+	"yatori-go-quesbank/utils/dbutils"
 )
 
 // 执行逻辑
@@ -44,7 +45,21 @@ func AutoResearch(question entity.Question) *entity.DTOQuestion {
 func localResearch(anSet config.AnswerSetting, question entity.Question) *entity.DTOQuestion {
 	//探测是否本地缓存库用
 	//resultData := questionbank.SelectForTypeAndContent(global.GlobalDB, &entity.DataQuestion{Question: question})
-	resultData := questionbank.SelectForTypeAndLikeContent1_4(global.GlobalDB, &entity.DataQuestion{Question: question})
+	var resultData *entity.DataQuestion
+	if anSet.LocalPath == "" {
+		resultData = questionbank.SelectForTypeAndLikeContent1_4(global.GlobalDBMap[global.GlobalConfig.Setting.BasicSetting.DefaultDBPath], &entity.DataQuestion{Question: question})
+	} else {
+		//懒加载数据库
+		if global.GlobalDBMap[anSet.LocalPath] == nil {
+			db, err := dbutils.DBClient(anSet.LocalPath)
+			if err != nil {
+				log.Println(err.Error())
+			}
+			global.GlobalDBMap[anSet.LocalPath] = db
+		}
+		resultData = questionbank.SelectForTypeAndLikeContent1_4(global.GlobalDBMap[anSet.LocalPath], &entity.DataQuestion{Question: question})
+	}
+
 	if resultData == nil {
 		return nil
 	}
@@ -67,7 +82,7 @@ func externResearch(anSet config.AnswerSetting, question entity.Question) *entit
 		if result != nil {
 			//缓存本地
 			if anSet.AutoCache == 1 {
-				err := questionbank.InsertIfNot(global.GlobalDB, &entity.DataQuestion{Question: *result})
+				err := questionbank.InsertIfNot(global.GlobalDBMap["default"], &entity.DataQuestion{Question: *result})
 				if err != nil {
 					log.Println(err)
 				}
