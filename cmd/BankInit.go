@@ -18,9 +18,12 @@ import (
 func BankInit() {
 	LogInit()
 	fmt.Println(config.YatoriLogo()) //打印LOGO
+	ConfigInit()                     //初始化配置文件读取
 	DBInit()                         //初始化数据库
 	ServerInit()                     //初始化服务器
 }
+
+// 日志系统初始化
 func LogInit() {
 	// 设置日志输出到终端
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
@@ -29,6 +32,11 @@ func LogInit() {
 
 	logger := slog.New(handler)
 	slog.SetDefault(logger) // 设置为默认日志器（可选）
+}
+
+// 配置文件系统初始化
+func ConfigInit() {
+	global.GlobalConfig = config.ReadConfig("./config.yaml")
 }
 
 // 数据库初始化

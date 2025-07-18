@@ -19,6 +19,10 @@ type BasicSetting struct {
 	LogOutFileSw int    `json:"logOutFileSw,omitempty" yaml:"logOutFileSw"` //是否输出日志文件0代表不输出，1代表输出，默认为1
 	LogLevel     string `json:"logLevel,omitempty" yaml:"logLevel"`         //日志等级，默认INFO，DEBUG为找BUG调式用的，日志内容较详细，默认为INFO
 }
+
+type LocalSetting struct {
+	LocalPath string `json:"localPath"`
+}
 type AiSetting struct {
 	AiType  aitype.AiType `json:"aiType" yaml:"aiType"`
 	AiUrl   string        `json:"aiUrl" yaml:"aiUrl"`
@@ -29,12 +33,15 @@ type AiSetting struct {
 type ExternalSetting struct {
 	ExType  string `json:"exType" yaml:"exType"`   //外部题库对接类型
 	ExToken string `json:"exToken" yaml:"exToken"` //外部题库对接Token
+
 }
 
 type AnswerSetting struct {
-	AnswerType string `json:"answerType"`
-	AiSetting
-	ExternalSetting
+	AnswerType      string `json:"answerType"`
+	LocalSetting    `mapstructure:",squash"`
+	AiSetting       `mapstructure:",squash"`
+	ExternalSetting `mapstructure:",squash"`
+	AutoCache       int `json:"autoCache" yaml:"autoCache"`
 }
 type Setting struct {
 	BasicSetting  BasicSetting    `json:"basicSetting" yaml:"basicSetting"`
@@ -68,7 +75,6 @@ func ReadConfig(filePath string) JSONDataForConfig {
 	}
 	err = viper.Unmarshal(&configJson)
 	//viper.SetTypeByDefaultValue(true)
-	viper.SetDefault("setting.basicSetting.logModel", 5)
 
 	if err != nil {
 		//log2.Print(log2.INFO, log2.BoldRed, "配置文件读取失败，请检查配置文件填写是否正确")

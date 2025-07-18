@@ -21,6 +21,12 @@ type ResultQuestion struct {
 	Code    int    `json:"code"`    //状态码，200(找到答案),404(未找到答案)
 }
 
+type DTOQuestion struct {
+	Question
+	Replier   string `json:"replier"` //答复者是谁
+	ReplyType string `json:"replyType"`
+}
+
 // 问题数据结构
 type Question struct {
 	Md5     string      `gorm:"column:md5" json:"md5"`                   //题目MD5值，注意，是（题目类型+题目内容）的编码的MD5值

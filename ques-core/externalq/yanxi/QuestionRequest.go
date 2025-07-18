@@ -52,6 +52,36 @@ func Request(token string, question entity.Question) *entity.Question {
 	if gojsonq.New().JSONString(jsonStr).Find("data.answer") == nil {
 		return nil
 	}
-	question.Answers = strings.Split(gojsonq.New().JSONString(jsonStr).Find("data.answer").(string), "#")
+	answer1 := strings.Split(gojsonq.New().JSONString(jsonStr).Find("data.answer").(string), "#")
+	//去空
+	answer1 = func(v []string) []string {
+		res := []string{}
+		for _, answer := range v {
+			if answer != "" {
+				res = append(res, answer)
+			}
+
+		}
+		return res
+	}(answer1)
+	answer2 := strings.Split(gojsonq.New().JSONString(jsonStr).Find("data.answer").(string), "\n\n")
+	//去空
+	answer2 = func(v []string) []string {
+		res := []string{}
+		for _, answer := range v {
+			if answer != "" {
+				res = append(res, answer)
+			}
+
+		}
+		return res
+	}(answer2)
+
+	if len(answer2) > len(answer1) {
+		question.Answers = answer2
+	} else {
+		question.Answers = answer1
+	}
+
 	return &question
 }
