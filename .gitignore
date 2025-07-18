@@ -1,1 +1,4 @@
 ./idea
+./*.db
+./config.yml
+./config.yaml
