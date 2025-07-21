@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
-	api_server "yatori-go-quesbank/cmd/api-server"
 	"yatori-go-quesbank/global"
 	"yatori-go-quesbank/utils"
 
@@ -63,7 +63,15 @@ func DBInit(path string) {
 	global.GlobalDBMap[path] = db
 }
 
+type Group struct {
+	*gin.RouterGroup
+}
+
 // 初始化gin
-func ServerInit() {
-	api_server.QuestionApi()
+func ServerInit() *gin.Engine {
+	router := gin.Default()
+	apiGroup := router.Group("")
+	routerGroup := Group{apiGroup}
+	routerGroup.QuestionRouter()
+	return router
 }

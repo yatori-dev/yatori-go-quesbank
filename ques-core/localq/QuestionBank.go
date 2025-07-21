@@ -122,7 +122,9 @@ func SelectsForMd5(db *gorm.DB, question *entity.DataQuestion) []entity.DataQues
 
 // 直接通过题目找答案返回
 func SelectAnswer(db *gorm.DB, question *entity.DataQuestion) []string {
-
+	if err := db.Where("content = ?", question.Content).First(&question).Error; err != nil {
+		log.Fatalf("查询数据失败: %v", err)
+	}
 	return nil
 }
 
