@@ -82,7 +82,7 @@ func externResearch(anSet config.AnswerSetting, question entity.Question) *entit
 		if result != nil {
 			//缓存本地
 			if anSet.AutoCache == 1 {
-				err := questionbank.InsertIfNot(global.GlobalDBMap["default"], &entity.DataQuestion{Question: *result})
+				err := questionbank.InsertIfNot(global.GlobalDBMap[global.GlobalConfig.Setting.BasicSetting.DefaultDBPath], &entity.DataQuestion{Question: *result})
 				if err != nil {
 					log.Println(err)
 				}
