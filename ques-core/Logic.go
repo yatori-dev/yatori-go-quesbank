@@ -41,6 +41,15 @@ func AutoResearch(question entity.Question) *entity.DTOQuestion {
 	return Research(global.GlobalConfig.Setting.AnswerSetting, question)
 }
 
+func LocalAllResearch() (result []entity.DTOQuestion) {
+	db := global.GlobalDBMap[global.GlobalConfig.Setting.BasicSetting.DefaultDBPath]
+	allQuestion := questionbank.SelectsAllQuestion(db)
+	for _, que := range allQuestion {
+		result = append(result, entity.DTOQuestion{Question: que.Question, Replier: "LOCAL", ReplyType: "LOCAL"})
+	}
+	return result
+}
+
 // 本地搜索
 func localResearch(anSet config.AnswerSetting, question entity.Question) *entity.DTOQuestion {
 	//探测是否本地缓存库用
