@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"time"
 	"yatori-go-quesbank/ques-core/entity"
+	"yatori-go-quesbank/ques-core/entity/qtype"
 )
 
 // 题库缓存初始化
@@ -130,12 +131,21 @@ func SelectsAllQuestion(db *gorm.DB) []entity.DataQuestion {
 	return questions
 }
 
+// SelectsForType 根据题目类型查询
+func SelectsForType(db *gorm.DB, qtype qtype.QType) []entity.DataQuestion {
+	var questions []entity.DataQuestion
+	if err := db.Where("type = ?", qtype.String()).Find(&questions).Error; err != nil {
+		log.Fatalf("查询数据失败: %v", err)
+	}
+	return questions
+}
+
 // 直接通过题目找答案返回
 func SelectAnswer(db *gorm.DB, question *entity.DataQuestion) []string {
 	if err := db.Where("content = ?", question.Content).First(&question).Error; err != nil {
 		log.Fatalf("查询数据失败: %v", err)
 	}
-	return nil
+	return question.Answers
 }
 
 // 根据题目类型和内容更新题目

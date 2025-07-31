@@ -7,6 +7,7 @@ import (
 	"yatori-go-quesbank/global"
 	"yatori-go-quesbank/ques-core/aiq"
 	"yatori-go-quesbank/ques-core/entity"
+	"yatori-go-quesbank/ques-core/entity/qtype"
 	"yatori-go-quesbank/ques-core/externalq/yanxi"
 	questionbank "yatori-go-quesbank/ques-core/localq"
 	"yatori-go-quesbank/utils/dbutils"
@@ -48,6 +49,15 @@ func LocalAllResearch() (result []entity.DTOQuestion) {
 		result = append(result, entity.DTOQuestion{Question: que.Question, Replier: "LOCAL", ReplyType: "LOCAL"})
 	}
 	return result
+}
+
+func LocalTypeResearch(qtype qtype.QType) (result []entity.DTOQuestion) {
+	db := global.GlobalDBMap[global.GlobalConfig.Setting.BasicSetting.DefaultDBPath]
+	forTypeQues := questionbank.SelectsForType(db, qtype)
+	for _, que := range forTypeQues {
+		result = append(result, entity.DTOQuestion{Question: que.Question, Replier: "LOCAL", ReplyType: "LOCAL"})
+	}
+	return
 }
 
 // 本地搜索
