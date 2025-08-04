@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"time"
 	"yatori-go-quesbank/ques-core/entity"
+	"yatori-go-quesbank/ques-core/entity/qtype"
 )
 
 // 题库缓存初始化
@@ -54,7 +55,7 @@ func InsertIfNot(db *gorm.DB, question *entity.DataQuestion) error {
 		return nil
 	}
 	if question.Md5 == "" {
-		question.Md5 = fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s-%s", question.Type, question.Content))))
+		question.Md5 = fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s-%s", question.Type.String(), question.Content))))
 	}
 	// 插入题目
 	err := Insert(db, question)
@@ -67,7 +68,7 @@ func InsertIfNot(db *gorm.DB, question *entity.DataQuestion) error {
 // 根据题目类型和内容查询题目
 func SelectsForTypeAndContent(db *gorm.DB, question *entity.DataQuestion) []entity.DataQuestion {
 	var questions []entity.DataQuestion
-	if err := db.Where("type = ? AND content = ?", question.Type, question.Content).Find(&questions).Error; err != nil {
+	if err := db.Where("type = ? AND content = ?", question.Type.String(), question.Content).Find(&questions).Error; err != nil {
 		log.Fatalf("查询数据失败: %v", err)
 	}
 	return questions
@@ -76,7 +77,7 @@ func SelectsForTypeAndContent(db *gorm.DB, question *entity.DataQuestion) []enti
 // 根据题目类型和内容查询题目
 func SelectForTypeAndContent(db *gorm.DB, question *entity.DataQuestion) *entity.DataQuestion {
 	var qu entity.DataQuestion
-	if err := db.First(&qu, "type = ? AND content = ?", question.Type, question.Content).Error; err != nil {
+	if err := db.First(&qu, "type = ? AND content = ?", question.Type.String(), question.Content).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil
 		}
@@ -89,7 +90,7 @@ func SelectForTypeAndContent(db *gorm.DB, question *entity.DataQuestion) *entity
 func SelectForTypeAndLikeContent1_4(db *gorm.DB, question *entity.DataQuestion) *entity.DataQuestion {
 	var qu entity.DataQuestion
 	if len(question.Content) < 10 {
-		if err := db.First(&qu, "type = ? AND content = ?", question.Type, question.Content).Error; err != nil {
+		if err := db.First(&qu, "type = ? AND content = ?", question.Type.String(), question.Content).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				return nil
 			}
@@ -100,7 +101,7 @@ func SelectForTypeAndLikeContent1_4(db *gorm.DB, question *entity.DataQuestion) 
 		runes := []rune(question.Content)
 		slog.Debug(string(runes[2 : len(runes)-5]))
 
-		if err := db.Where("type = ? AND content like ?", question.Type, "%"+string(runes[2:len(runes)-5])+"%").First(&qu).Error; err != nil {
+		if err := db.Where("type = ? AND content like ?", question.Type.String(), "%"+string(runes[2:len(runes)-5])+"%").First(&qu).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				return nil
 			}
@@ -120,17 +121,36 @@ func SelectsForMd5(db *gorm.DB, question *entity.DataQuestion) []entity.DataQues
 	return questions
 }
 
+// SelectsAllQuestion 查询所有题目
+func SelectsAllQuestion(db *gorm.DB) []entity.DataQuestion {
+	var questions []entity.DataQuestion
+	result := db.Find(&questions)
+	if result.Error != nil {
+		log.Fatalf("查询数据失败: %v", result.Error)
+	}
+	return questions
+}
+
+// SelectsForType 根据题目类型查询
+func SelectsForType(db *gorm.DB, qtype qtype.QType) []entity.DataQuestion {
+	var questions []entity.DataQuestion
+	if err := db.Where("type = ?", qtype.String()).Find(&questions).Error; err != nil {
+		log.Fatalf("查询数据失败: %v", err)
+	}
+	return questions
+}
+
 // 直接通过题目找答案返回
 func SelectAnswer(db *gorm.DB, question *entity.DataQuestion) []string {
 	if err := db.Where("content = ?", question.Content).First(&question).Error; err != nil {
 		log.Fatalf("查询数据失败: %v", err)
 	}
-	return nil
+	return question.Answers
 }
 
 // 根据题目类型和内容更新题目
 func UpdateAnswerForTypeAndContent(db *gorm.DB, question *entity.DataQuestion) error {
-	if err := db.Where("type = ? AND content = ?", question.Type, question.Content).Updates(&question).Error; err != nil {
+	if err := db.Where("type = ? AND content = ?", question.Type.String(), question.Content).Updates(&question).Error; err != nil {
 		return err
 	}
 	return nil
@@ -138,7 +158,7 @@ func UpdateAnswerForTypeAndContent(db *gorm.DB, question *entity.DataQuestion) e
 
 // 根据题目类型和内容删除题目
 func DeleteForTypeAndContent(db *gorm.DB, question *entity.DataQuestion) error {
-	if err := db.Where("type = ? AND content = ?", question.Type, question.Content).Delete(&entity.DataQuestion{}).Error; err != nil {
+	if err := db.Where("type = ? AND content = ?", question.Type.String(), question.Content).Delete(&entity.DataQuestion{}).Error; err != nil {
 		return err
 	}
 	return nil
@@ -147,7 +167,7 @@ func DeleteForTypeAndContent(db *gorm.DB, question *entity.DataQuestion) error {
 // 检验Question合法性
 func CheckQue(question *entity.DataQuestion) error {
 	//检验数据合法性
-	if question.Type == "" {
+	if question.Type.String() == "" {
 		return errors.New("Not Found Question Type")
 	}
 	if question.Content == "" {
