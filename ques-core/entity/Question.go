@@ -39,11 +39,11 @@ type DTOQuestion struct {
 
 // 问题数据结构
 type Question struct {
-	Md5     string      `gorm:"column:md5" json:"md5"`                   //题目MD5值，注意，是（题目类型+题目内容）的编码的MD5值
-	Type    qtype.QType `gorm:"column:type" json:"type"`                 //题目类型
-	Content string      `gorm:"column:content" json:"content"`           //题目内容
-	Options StringArray `gorm:"column:options" json:"options"`           //选项（一般选择题才会有），存储为Json
-	Answers StringArray `gorm:"column:answers;type:TEXT" json:"answers"` // 答案，存储为 JSON
+	Md5     string      `gorm:"column:md5" json:"md5"`                            //题目MD5值，注意，是（题目类型+题目内容）的编码的MD5值
+	Type    qtype.QType `gorm:"column:type" json:"type" binding:"required"`       //题目类型
+	Content string      `gorm:"column:content" json:"content" binding:"required"` //题目内容
+	Options StringArray `gorm:"column:options" json:"options"`                    //选项（一般选择题才会有），存储为Json
+	Answers StringArray `gorm:"column:answers;type:TEXT" json:"answers"`          // 答案，存储为 JSON
 
 }
 
