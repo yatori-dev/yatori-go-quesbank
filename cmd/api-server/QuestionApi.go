@@ -48,28 +48,16 @@ func (LocalQuestionApi) SelectsTypeApi(c *gin.Context) {
 	return
 }
 
-type QuestionRequest struct {
-	Type    qtype.QType        `json:"type"`
-	Content string             `json:"content"`
-	Options entity.StringArray `json:"options"`
-}
-
 // 题目请求Api
 func QuestionApi(c *gin.Context) {
-	var question QuestionRequest
+	var question entity.Question
 
 	if err := c.ShouldBindJSON(&question); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 
 	//查询题目
-	result := ques_core.AutoResearch(entity.Question{
-		Md5:     "",
-		Type:    question.Type,
-		Content: question.Content,
-		Options: question.Options,
-		Answers: nil,
-	})
+	result := ques_core.AutoResearch(question)
 	if result != nil {
 		c.JSON(http.StatusOK, entity.ResultQuestion{
 			Question: result.Question,
