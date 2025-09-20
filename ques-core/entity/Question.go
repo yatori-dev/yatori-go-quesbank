@@ -4,14 +4,21 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+
 	"gorm.io/gorm"
-	"yatori-go-quesbank/ques-core/entity/qtype"
 )
 
 // 用于数据库存储问题的数据结构
 type DataQuestion struct {
 	gorm.Model
 	Question
+	RightStatus int `gorm:"not null;column:right_status;type:INTEGER;default:0" json:"right_status"` //正确状态，0为待定，1为错误，2为正确
+}
+
+// Es用的
+type EsQuestion struct {
+	Question
+	RightStatus int `gorm:"not null;column:right_status;type:INTEGER;default:0" json:"right_status"` //正确状态，0为待定，1为错误，2为正确
 }
 
 // 用于回复的数据结构
@@ -40,8 +47,8 @@ type DTOQuestion struct {
 // 问题数据结构
 type Question struct {
 	Md5     string      `gorm:"column:md5" json:"md5"`                   //题目MD5值，注意，是（题目类型+题目内容）的编码的MD5值
-	Type    qtype.QType `gorm:"column:type" json:"type"`                 //题目类型
-	Content string      `gorm:"column:content" json:"content"`           //题目内容
+	Type    string      `gorm:"not null;column:type" json:"type"`        //题目类型
+	Content string      `gorm:"not null;column:content" json:"content"`  //题目内容
 	Options StringArray `gorm:"column:options" json:"options"`           //选项（一般选择题才会有），存储为Json
 	Answers StringArray `gorm:"column:answers;type:TEXT" json:"answers"` // 答案，存储为 JSON
 

@@ -4,25 +4,28 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/viper"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"yatori-go-quesbank/ques-core/entity/aitype"
+
+	"github.com/spf13/viper"
 )
 
 type JSONDataForConfig struct {
 	Setting Setting `json:"setting"`
 }
+
 type BasicSetting struct {
-	LogOutFileSw  int    `json:"logOutFileSw,omitempty" yaml:"logOutFileSw"` //是否输出日志文件0代表不输出，1代表输出，默认为1
-	LogLevel      string `json:"logLevel,omitempty" yaml:"logLevel"`         //日志等级，默认INFO，DEBUG为找BUG调式用的，日志内容较详细，默认为INFO
-	DefaultDBPath string `json:"defaultDBPath,omitempty" yaml:"defaultDBPath"`
+	LogOutFileSw      int    `json:"logOutFileSw,omitempty" yaml:"logOutFileSw"` //是否输出日志文件0代表不输出，1代表输出，默认为1
+	LogLevel          string `json:"logLevel,omitempty" yaml:"logLevel"`         //日志等级，默认INFO，DEBUG为找BUG调式用的，日志内容较详细，默认为INFO
+	DefaultSqlitePath string `json:"defaultSqlitePath,omitempty" yaml:"defaultSqlitePath"`
+	DefaultEsUrl      string `json:"defaultEsUrl,omitempty" yaml:"defaultEsUrl"`
 }
 
-type LocalSetting struct {
-	LocalPath string `json:"localPath"`
+type SqliteSetting struct {
+	SqlitePath string `json:"sqlitePath"`
 }
 type AiSetting struct {
 	AiType  aitype.AiType `json:"aiType" yaml:"aiType"`
@@ -37,12 +40,22 @@ type ExternalSetting struct {
 
 }
 
+type ESSetting struct {
+	EsUrl        string `json:"esUrl" yaml:"esUrl"`               //Es的链接
+	EsUsername   string `json:"esUsername" yaml:"esUsername"`     //用户
+	EsPassword   string `json:"esPassword" yaml:"esPassword"`     //密码
+	EsIndex      string `json:"esIndex" yaml:"esIndex"`           //索引
+	EsSkipVerify bool   `json:"esSkipVerify" yaml:"esSkipVerify"` //是否跳过TLS验证
+}
+
 type AnswerSetting struct {
-	AnswerType      string `json:"answerType"`
-	LocalSetting    `mapstructure:",squash"`
-	AiSetting       `mapstructure:",squash"`
-	ExternalSetting `mapstructure:",squash"`
-	AutoCache       int `json:"autoCache" yaml:"autoCache"`
+	AnswerType      string                   `json:"answerType"`  //题库类型
+	AnswerLabel     string                   `json:"answerLabel"` //唯一标签，不能重复
+	SqliteSetting   `mapstructure:",squash"` //Sqlite本地数据库题库
+	ESSetting       `mapstructure:",squash"` // ElasticSearch本地题库
+	AiSetting       `mapstructure:",squash"` //AI答题
+	ExternalSetting `mapstructure:",squash"` //外部第三方题库
+	CacheTargetList []string                 `json:"cacheTargetList" yaml:"cacheTargetList"`
 }
 type Setting struct {
 	BasicSetting  BasicSetting    `json:"basicSetting" yaml:"basicSetting"`
@@ -107,4 +120,14 @@ func StrToInt(s string) int {
 		return 0 // 其他错误处理逻辑
 	}
 	return res
+}
+
+// 根据指定Label标签获取对应answerConfig配置
+func GetAnswerConfigForLabel(setting []AnswerSetting, label string) *AnswerSetting {
+	for i := range setting {
+		if setting[i].AnswerLabel == label {
+			return &setting[i]
+		}
+	}
+	return nil
 }

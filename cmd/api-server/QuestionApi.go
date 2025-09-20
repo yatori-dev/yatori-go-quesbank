@@ -1,11 +1,12 @@
 package api_server
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	ques_core "yatori-go-quesbank/ques-core"
 	"yatori-go-quesbank/ques-core/entity"
 	"yatori-go-quesbank/ques-core/entity/qtype"
+
+	"github.com/gin-gonic/gin"
 )
 
 type LocalQuestionApi struct{}
@@ -36,7 +37,7 @@ func (LocalQuestionApi) SelectsTypeApi(c *gin.Context) {
 			Count:   int64(len(questions)),
 			List:    questions,
 			Msg:     "查询成功",
-			Replier: "LOCAL",
+			Replier: "Sqlite",
 			Code:    200,
 		})
 	}

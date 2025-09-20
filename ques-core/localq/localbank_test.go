@@ -17,7 +17,7 @@ type CData struct {
 }
 
 func TestImportLocalBank(t *testing.T) {
-	init, _ := QuestionBankInit()
+	init, _ := SqliteQuestionBankInit()
 	// 打开 JSON 文件
 	file, err := os.Open("D:\\QQNT\\Downloads\\1.json")
 	if err != nil {

@@ -2,7 +2,6 @@ package yanxi
 
 import (
 	"fmt"
-	"github.com/thedevsaddam/gojsonq"
 	"io/ioutil"
 	"log/slog"
 	"net/http"
@@ -10,6 +9,8 @@ import (
 	"strings"
 	"yatori-go-quesbank/ques-core/entity"
 	"yatori-go-quesbank/ques-core/entity/qtype"
+
+	"github.com/thedevsaddam/gojsonq"
 )
 
 // [{"name":"言溪题库","homepage":"https://tk.enncy.cn/","url":"https://tk.enncy.cn/query","method":"get","type":"GM_xmlhttpRequest","contentType":"json","data":{"token":"9e20541d49204bf0813a76e6f3bfdc7e","title":"${title}","options":"${options}","type":"${type}"},"handler":"return (res)=>res.code === 0 ? [res.data.answer, undefined] : [res.data.question,res.data.answer]"},{"name":"网课小工具题库（GO题）","homepage":"https://cx.icodef.com/","url":"https://cx.icodef.com/wyn-nb?v=4","method":"post","type":"GM_xmlhttpRequest","data":{"question":"${title}"},"headers":{"Content-Type":"application/x-www-form-urlencoded","Authorization":""},"handler":"return  (res)=> res.code === 1 ? [undefined,res.data] : [res.msg,undefined]"}]
@@ -43,6 +44,7 @@ func QuestionRequest(token string, title string, qType qtype.QType) string {
 // {"code":1,"data":{"question":"测试题目","answer":"用于检验学员受训后知识、技能以及绩效状况的一系列问题或评价方法。","times":98},"message":"请求成功"}
 func Request(token string, question entity.Question) *entity.Question {
 	jsonStr := QuestionRequest(token, question.Content, qtype.Index(question.Type))
+	//jsonStr := QuestionRequest(token, question.Content, question.Type)
 	json := gojsonq.New().JSONString(jsonStr)
 	if int(json.Find("code").(float64)) != 1 {
 		return nil
@@ -81,6 +83,11 @@ func Request(token string, question entity.Question) *entity.Question {
 		question.Answers = answer2
 	} else {
 		question.Answers = answer1
+	}
+	//题目也赋值一样
+	queryContent := gojsonq.New().JSONString(jsonStr).Find("data.question")
+	if queryContent != nil && queryContent.(string) != "" {
+		question.Content = queryContent.(string)
 	}
 
 	return &question

@@ -2,15 +2,16 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
 	"yatori-go-quesbank/global"
 	"yatori-go-quesbank/utils"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 
 	"yatori-go-quesbank/config"
 	"yatori-go-quesbank/ques-core/entity"
@@ -19,10 +20,11 @@ import (
 // 初始化
 func BankInit() {
 	LogInit()
-	fmt.Println(config.YatoriLogo())                               //打印LOGO
-	ConfigInit()                                                   //初始化配置文件读取
-	DBInit(global.GlobalConfig.Setting.BasicSetting.DefaultDBPath) //初始化数据库
-	ServerInit()                                                   //初始化服务器
+	fmt.Println(config.YatoriLogo())                                   //打印LOGO
+	ConfigInit()                                                       //初始化配置文件读取
+	DBInit(global.GlobalConfig.Setting.BasicSetting.DefaultSqlitePath) //初始Sqlite本地数据库
+	init := ServerInit()                                               //初始化服务器
+	init.Run(":8083")
 }
 
 // 日志系统初始化
@@ -60,7 +62,7 @@ func DBInit(path string) {
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
-	global.GlobalDBMap[path] = db
+	global.GlobalSqliteMap[path] = db
 }
 
 type Group struct {
