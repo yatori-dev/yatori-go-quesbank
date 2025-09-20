@@ -182,7 +182,7 @@ func externResearch(anSet config.AnswerSetting, question entity.Question) *entit
 		//使用言溪题库
 		result := yanxi.Request(anSet.ExToken, question)
 		if result != nil {
-			return &entity.DTOQuestion{Question: *result, Replier: "YANXI", ReplyType: "EXTERNAL"}
+			return &entity.DTOQuestion{Question: *result, Replier: anSet.AnswerLabel, ReplyType: "EXTERNAL"}
 		}
 	}
 
