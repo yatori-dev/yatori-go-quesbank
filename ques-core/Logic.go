@@ -32,6 +32,7 @@ func Research(anSet []config.AnswerSetting, question entity.Question) *entity.DT
 		case "EXTERNAL": //外部三方题库
 			que = externResearch(v, question)
 		}
+		//如果查询到题目则返回查询，否则后面就返回空
 		if que != nil {
 			//自动缓存逻辑
 			AutoCaches(v.CacheTargetList, anSet, que.Question)
@@ -170,9 +171,13 @@ func LoadEs(anSet config.AnswerSetting) {
 
 // AI搜索
 func aiResearch(anSet config.AnswerSetting, question entity.Question) *entity.DTOQuestion {
-	aiAnswer, err := aiq.AggregationAIApi(anSet.AiUrl, anSet.AiModel, anSet.AiType, aiq.AIChatMessages{}, anSet.APIKEY)
+	//AI答题处理
+	aiAnswer, err := aiq.AggregationAIApi(anSet.AiUrl, anSet.AiModel, anSet.AiType, aiq.BuildAiQuestionMessage(question), anSet.APIKEY)
 	slog.Debug(aiAnswer, err)
-	return nil
+	return &entity.DTOQuestion{
+		Question: aiq.ResponseTurnQuestion(question, aiAnswer),
+		Replier:  anSet.AnswerLabel,
+	}
 }
 
 // 外部题库搜索

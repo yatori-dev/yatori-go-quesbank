@@ -16,10 +16,21 @@ func EsQuestQuestionForContentMachOne(client *es9.TypedClient, indexName string,
 	resp, err := client.Search().
 		Index(indexName).
 		Query(&types.Query{
-			Match: map[string]types.MatchQuery{
-				"content": {Query: esQuestion.Content, Fuzziness: "AUTO"},
+			Bool: &types.BoolQuery{
+				Must: []types.Query{
+					{
+						Match: map[string]types.MatchQuery{
+							"content": {Query: esQuestion.Content, Fuzziness: "AUTO"},
+						},
+					},
+					{
+						Term: map[string]types.TermQuery{
+							"type": {Value: esQuestion.Type},
+						},
+					},
+				},
 			},
-		}).Size(1).
+		}).MinScore(80).Size(1).
 		Do(context.Background())
 	if err != nil {
 		fmt.Printf("search document failed, err:%v\n", err)
