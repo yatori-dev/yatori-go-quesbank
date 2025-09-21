@@ -11,6 +11,24 @@ import (
 	"github.com/elastic/go-elasticsearch/v9/typedapi/types"
 )
 
+// CompareQueryPercent 计算 query 在单条 content 中出现的百分比
+func CompareQueryPercent(content string, query string) float64 {
+	contentRunes := []rune(content)
+	queryRunes := []rune(query)
+
+	count := 0
+	for _, qr := range queryRunes {
+		for _, cr := range contentRunes {
+			if qr == cr {
+				count++
+				break // 每个 query 字符只算一次
+			}
+		}
+	}
+	percent := float64(count) / float64(len(queryRunes)) * 100
+	return percent
+}
+
 // 根据题目查询
 func EsQuestQuestionForContentMachOne(client *es9.TypedClient, indexName string, esQuestion entity.EsQuestion) *entity.Question {
 	resp, err := client.Search().
@@ -25,12 +43,12 @@ func EsQuestQuestionForContentMachOne(client *es9.TypedClient, indexName string,
 					},
 					{
 						Term: map[string]types.TermQuery{
-							"type": {Value: esQuestion.Type},
+							"type.keyword": {Value: esQuestion.Type},
 						},
 					},
 				},
 			},
-		}).MinScore(80).Size(1).
+		}).Size(1).
 		Do(context.Background())
 	if err != nil {
 		fmt.Printf("search document failed, err:%v\n", err)
@@ -44,6 +62,10 @@ func EsQuestQuestionForContentMachOne(client *es9.TypedClient, indexName string,
 	question := &entity.Question{}
 	if err1 := json.Unmarshal(resp.Hits.Hits[0].Source_, question); err1 != nil {
 		fmt.Printf("unmarshal failed: %v\n", err)
+		return nil
+	}
+	//如果查询的题相差太大
+	if CompareQueryPercent(question.Content, esQuestion.Content) < 60 {
 		return nil
 	}
 	return question

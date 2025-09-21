@@ -82,7 +82,7 @@ func Request(token string, question entity.Question) *entity.Question {
 	}(answer1)
 
 	//第二种分割类型
-	answer2 := strings.Split(gojsonq.New().JSONString(jsonStr).Find("data.answer").(string), "\n\n")
+	answer2 := strings.Split(gojsonq.New().JSONString(jsonStr).Find("data.answer").(string), "\n")
 	//去空
 	answer2 = func(v []string) []string {
 		res := []string{}
@@ -109,8 +109,38 @@ func Request(token string, question entity.Question) *entity.Question {
 		return res
 	}(answer3)
 
+	// 第二种回复类型
+	answer4 := strings.Split(strings.ReplaceAll(strings.ReplaceAll(gojsonq.New().JSONString(jsonStr).Find("data.answer").(string), "[", ""), "]", ""), ",")
+	//去空
+	answer4 = func(v []string) []string {
+		res := []string{}
+		for _, answer := range v {
+			if answer != "" {
+				res = append(res, answer)
+			}
+
+		}
+		return res
+	}(answer4)
 	//赋值可以分组最大的那个作为答案
-	question.Answers = maxArray(answer1, answer2, answer3)
+	question.Answers = maxArray(answer1, answer2, answer3, answer4)
+
+	//检测是否为选项字母答案，如果是，则转换
+	for i, option := range question.Answers {
+		if option == "A" && len(question.Options) >= 1 {
+			question.Answers[i] = question.Options[0]
+		} else if option == "B" && len(question.Options) >= 2 {
+			question.Answers[i] = question.Options[1]
+		} else if option == "C" && len(question.Options) >= 3 {
+			question.Answers[i] = question.Options[2]
+		} else if option == "D" && len(question.Options) >= 4 {
+			question.Answers[i] = question.Options[3]
+		} else if option == "E" && len(question.Options) >= 5 {
+			question.Answers[i] = question.Options[4]
+		} else if option == "F" && len(question.Options) >= 6 {
+			question.Answers[i] = question.Options[5]
+		}
+	}
 
 	//题目也赋值一样
 	queryContent := gojsonq.New().JSONString(jsonStr).Find("data.question")

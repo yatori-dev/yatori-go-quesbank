@@ -46,6 +46,19 @@ func questionRequest(token string, title string, qType qtype.QType) string {
 	return string(body)
 }
 
+func maxArray(arrs ...[]string) []string {
+	if len(arrs) == 0 {
+		return nil
+	}
+	maxArr := arrs[0]
+	for _, arr := range arrs[1:] {
+		if len(arr) > len(maxArr) {
+			maxArr = arr
+		}
+	}
+	return maxArr
+}
+
 // {"code":0,"data":{"question":"无","answer":"题目不能为空"},"message":"请求失败"}
 // {
 // "code": 1,
@@ -76,7 +89,26 @@ func Request(token string, question entity.Question) *entity.Question {
 		}
 		return res
 	}(answer1)
-	question.Answers = answer1
 
+	// 第二种回复类型
+	answer2 := strings.Split(strings.ReplaceAll(strings.ReplaceAll(gojsonq.New().JSONString(jsonStr).Find("data").(string), "[", ""), "]", ""), ",")
+
+	question.Answers = maxArray(answer1, answer2)
+	//检测是否为选项字母答案，如果是，则转换
+	for i, option := range question.Answers {
+		if option == "A" && len(question.Options) >= 1 {
+			question.Answers[i] = question.Options[0]
+		} else if option == "B" && len(question.Options) >= 2 {
+			question.Answers[i] = question.Options[1]
+		} else if option == "C" && len(question.Options) >= 3 {
+			question.Answers[i] = question.Options[2]
+		} else if option == "D" && len(question.Options) >= 4 {
+			question.Answers[i] = question.Options[3]
+		} else if option == "E" && len(question.Options) >= 5 {
+			question.Answers[i] = question.Options[4]
+		} else if option == "F" && len(question.Options) >= 6 {
+			question.Answers[i] = question.Options[5]
+		}
+	}
 	return &question
 }
