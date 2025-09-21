@@ -13,16 +13,30 @@ setting:
       cacheTargetList: [] # 缓存目标，如果搜到题目则缓存到指定answerLabel标签的题库里面（注意对应标签的题库只能是Sqlite类型或ES类型）
 
 
+# ElasticSearch本地题库模板-------------------------------------------------------
+#    - answerType: ES # 代表该配置为ElasticSearch题库，固定写法
+#      answerLabel: "" # 该题库配置的唯一标签标识，随便你怎么填写，但是不得与其他标签重复
+#      esUrl: "http://localhost:9200" # ES的http链接
+#      esUsername: "elastic" # ES的账户名，一般一开始启动ES的时候控制台会显示有默认的账号密码
+#      esPassword: "ymtberZQNjsomxwduLmv" ES的对应账户密码，一般一开始启动ES的时候控制台会显示有默认的账号密码
+#      esIndex: "" # ES对应题库的索引，不会填就直接填quesbank吧
+#      esSkipVerify: false # 是否跳过SSL证书认证，根据情况进行改写，一般为false
+#      cacheTargetList: [] # 缓存目标，如果搜到题目则缓存到指定answerLabel标签的题库里面（只能是Sqlite类型以及ES类型）
+
+
+# Sqlite本地题库模板--------------------------------------------------------------
 #    - answerType: SQLITE # 固定写法，代表该配置是本地Sqlite题库
 #      sqlitePath: "./db/luyao.db" #可以是绝对目录，可以是相对目录，留空的话默认是相对该exe程序路径
 #      cacheTargetList: [] # 缓存目标，如果搜到题目则缓存到指定answerLabel标签的题库里面（注意对应标签的题库只能是Sqlite类型或ES类型）
 
-#三方题库模板--------------------------------------------------------------------
+
+# 三方题库模板--------------------------------------------------------------------
 #    - answerType: EXTERNAL #代表该配置为外置三方题库，固定写法
 #      answerLabel: "" #该题库配置的唯一标签标识，随便你怎么填写，但是不得与其他标签重复
 #      exType: MAX  #这里填的外挂题库的类型，目前支持：MAX（max题库），YANXI（言溪题库）
 #      exToken: ""  #题库Token
 #      cacheTargetList: [] # 缓存目标，如果搜到题目则缓存到指定answerLabel标签的题库里面（注意对应标签的题库只能是Sqlite类型或ES类型）
+
 
 # AI答题模板---------------------------------------------------------------------
 #    - answerType: AI  #代表该配置为AI答题
