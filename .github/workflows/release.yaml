@@ -25,6 +25,10 @@ env:
   RELEASE_DIR: release
   RELEASE_NOTICES: |
     - [👏] 首次发布quesbank
+    - [👏] 支持ElasticSearch本地题库缓存
+    - [👏] 支持Sqlite本地题库缓存
+    - [👏] 适配言溪题库
+    - [👏] 适配max题库
     
 
 jobs:
