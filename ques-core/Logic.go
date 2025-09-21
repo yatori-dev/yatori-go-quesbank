@@ -10,6 +10,7 @@ import (
 	"yatori-go-quesbank/ques-core/aiq"
 	"yatori-go-quesbank/ques-core/entity"
 	"yatori-go-quesbank/ques-core/entity/qtype"
+	maxq "yatori-go-quesbank/ques-core/externalq/maxq"
 	"yatori-go-quesbank/ques-core/externalq/yanxi"
 	questionbank "yatori-go-quesbank/ques-core/localq"
 	"yatori-go-quesbank/utils/dbutils"
@@ -186,6 +187,12 @@ func externResearch(anSet config.AnswerSetting, question entity.Question) *entit
 	case "YANXI":
 		//使用言溪题库
 		result := yanxi.Request(anSet.ExToken, question)
+		if result != nil {
+			return &entity.DTOQuestion{Question: *result, Replier: anSet.AnswerLabel, ReplyType: "EXTERNAL"}
+		}
+	case "MAX":
+		//使用max题库
+		result := maxq.Request(anSet.ExToken, question)
 		if result != nil {
 			return &entity.DTOQuestion{Question: *result, Replier: anSet.AnswerLabel, ReplyType: "EXTERNAL"}
 		}
