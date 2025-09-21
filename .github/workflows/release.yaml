@@ -1,0 +1,147 @@
+name: Go Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags (e.g., v1.2.3)
+#    branches:
+#      - main  # Trigger on push to main branch as well
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for the release'
+        required: true
+        default: 'v0.0.1-Beta.1'  # Default tag name
+
+permissions:
+  contents: write  # Allow writing to GitHub releases
+#  - [👏]
+#  - [‍🔧]
+#  - [☠️]
+env:
+  PROJECT_NAME: ${{ github.event.repository.name }}
+  BUILD_DATE: ${{ github.run_id }}
+  VERSION: ${{ github.ref_name }}  # Dynamic version based on the tag name
+  RELEASE_DIR: release
+  RELEASE_NOTICES: |
+    - [👏] 首次发布quesbank
+    
+
+jobs:
+  # Linux build job
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full git history for versioning
+
+      # Install necessary dependencies
+#      - name: Install dependencies
+#        run: |
+#          sudo apt-get update
+#          sudo apt-get install -y libasound2-dev pkg-config gcc-aarch64-linux-gnu
+
+      # Set up Go
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'  # Use Go version from go.mod
+          cache: true  # Enable dependency caching
+
+      - name: Get dependencies
+        run: |
+          export GOPROXY=direct
+          export GONOSUMDB=*
+          rm -rf go.sum
+          go clean -modcache
+          go env -w GOSUMDB=off
+          go mod tidy
+
+      - name: Prepare Release Directory #创建压缩目录
+        run: mkdir -p ${{ env.RELEASE_DIR }}/yatori-go-quesbank.${{env.VERSION}}-linux-amd64-release
+
+      # Build Linux AMD64
+      - name: Build Linux AMD64
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+            -o ${{ env.RELEASE_DIR }}/yatori-go-quesbank.${{env.VERSION}}-linux-amd64-release/${{ env.PROJECT_NAME }}
+      - name: Create release tar
+        run: | # 打包发布版本压缩包
+          cp command/config.yaml ${{ env.RELEASE_DIR }}/yatori-go-quesbank.${{env.VERSION}}-linux-amd64-release
+          cd ${{ env.RELEASE_DIR }}
+          tar -czvf yatori-go-quesbank.${{env.VERSION}}-linux-amd64-release.tar.gz yatori-go-quesbank.${{env.VERSION}}-linux-amd64-release
+          rm -rf yatori-go-quesbank.${{env.VERSION}}-linux-amd64-release
+          cd ..
+      # Create GitHub Release
+      - name: Create GitHub Release with custom notes
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: ${{ env.RELEASE_DIR }}/*  # 文件发布目录
+          #          generate_release_notes: true  # 自动发行说明
+          draft: false  # 不创建草稿发布
+          prerelease: false  # 不标记为预发布
+          tag_name: ${{ env.VERSION }}  # 从标签中使用动态版本
+          body: ${{env.RELEASE_NOTICES}} # 使用读取到的发布说明内容
+
+  # Windows build job
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    needs: build-linux  # Ensure Linux build completes first
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full git history for versioning
+
+      # Set up Go for Windows
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'  # Use Go version from go.mod
+          cache: true  # Enable dependency caching
+
+      - name: Get dependencies
+        run: |
+          set GOPROXY=direct
+          set GONOSUMDB=*
+          go clean -modcache
+          del go.sum
+          go get -u ./...
+          go mod tidy
+
+      - name: Prepare Release Directory
+        run: mkdir -p ${{ env.RELEASE_DIR }}\yatori-go-quesbank.${{env.VERSION}}-windows-amd64-release
+
+      # Build Windows AMD64
+      - name: Build Windows AMD64
+        run: |
+          set CGO_ENABLED=0
+          set GOOS=windows 
+          set GOARCH=amd64 
+          go build -o ${{ env.RELEASE_DIR }}\yatori-go-quesbank.${{env.VERSION}}-windows-amd64-release\${{ env.PROJECT_NAME }}.exe
+      #          tar -czvf yatori-go-console.${{env.VERSION}}-windows-amd64-release.tar.gz yatori-go-console.${{env.VERSION}}-windows-amd64-release 这个是windows打包tar.gz包的
+      - name: Create Release zip
+        run: |
+          copy command\config.yaml ${{ env.RELEASE_DIR }}\yatori-go-quesbank.${{env.VERSION}}-windows-amd64-release
+          copy command\start.bat ${{ env.RELEASE_DIR }}\yatori-go-quesbank.${{env.VERSION}}-windows-amd64-release
+          cd ${{ env.RELEASE_DIR }}
+          Compress-Archive -Path "yatori-go-quesbank.${{env.VERSION}}-windows-amd64-release" -DestinationPath "yatori-go-quesbank.${{env.VERSION}}-windows-amd64-release.zip"
+          Remove-Item -Recurse -Force "yatori-go-quesbank.${{env.VERSION}}-windows-amd64-release"
+          cd ..
+      # Create GitHub Release
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: ${{ env.RELEASE_DIR }}/*  # 文件发布目录
+          generate_release_notes: true  # 自动发行说明
+          draft: false  # 不创建草稿发布
+          prerelease: false  # 不标记为预发布
+          tag_name: ${{ env.VERSION }}  # 从标签中使用动态版本
