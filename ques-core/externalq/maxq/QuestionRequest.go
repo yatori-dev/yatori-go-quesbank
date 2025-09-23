@@ -1,21 +1,28 @@
 package yanxi
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"yatori-go-quesbank/ques-core/entity"
-	"yatori-go-quesbank/ques-core/entity/qtype"
 
 	"github.com/thedevsaddam/gojsonq"
 )
 
 // [{"name":"言溪题库","homepage":"https://tk.enncy.cn/","url":"https://tk.enncy.cn/query","method":"get","type":"GM_xmlhttpRequest","contentType":"json","data":{"token":"9e20541d49204bf0813a76e6f3bfdc7e","title":"${title}","options":"${options}","type":"${type}"},"handler":"return (res)=>res.code === 0 ? [res.data.answer, undefined] : [res.data.question,res.data.answer]"},{"name":"网课小工具题库（GO题）","homepage":"https://cx.icodef.com/","url":"https://cx.icodef.com/wyn-nb?v=4","method":"post","type":"GM_xmlhttpRequest","data":{"question":"${title}"},"headers":{"Content-Type":"application/x-www-form-urlencoded","Authorization":""},"handler":"return  (res)=> res.code === 1 ? [undefined,res.data] : [res.msg,undefined]"}]
-func questionRequest(token string, title string, qType qtype.QType) string {
+func questionRequest(token string, question entity.Question) string {
 
-	urlStr := "https://max.tlicf.com/Interface/xxt/?key=" + token + "&question=" + url.QueryEscape(title)
+	urlStr := "https://max.tlicf.com/Interface/xxt/?key=" + token + "&question=" + url.QueryEscape(question.Content) + "&info=" + url.QueryEscape(question.Type)
+	if len(question.Options) >= 1 {
+		marshal, err := json.Marshal(question.Options)
+		if err == nil {
+			urlStr += string(marshal)
+		}
+	}
+
 	method := "GET"
 
 	client := &http.Client{}
@@ -65,7 +72,7 @@ func maxArray(arrs ...[]string) []string {
 // "data": "活期储蓄###整存整取###定活两便###通知存款"
 // }
 func Request(token string, question entity.Question) *entity.Question {
-	jsonStr := questionRequest(token, question.Content, qtype.Index(question.Type))
+	jsonStr := questionRequest(token, question)
 	//jsonStr := QuestionRequest(token, question.Content, question.Type)
 	json := gojsonq.New().JSONString(jsonStr)
 	if int(json.Find("code").(float64)) != 1 {
