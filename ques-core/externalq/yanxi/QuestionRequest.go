@@ -3,7 +3,6 @@ package yanxi
 import (
 	"fmt"
 	"io/ioutil"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -22,7 +21,7 @@ func questionRequest(token string, title string, qType qtype.QType) string {
 	params.Add("title", title)
 	params.Add("type", qType.YanXiString())
 	client := &http.Client{}
-	slog.Debug("言溪题库请求参数编码--> ", params.Encode())
+	//slog.Debug("言溪题库请求参数编码--> ", params.Encode())
 	req, err := http.NewRequest(method, urlStr+"?"+params.Encode(), nil)
 
 	if err != nil {
@@ -62,8 +61,8 @@ func Request(token string, question entity.Question) *entity.Question {
 	if int(json.Find("code").(float64)) != 1 {
 		return nil
 	}
-	fmt.Println(json)
-	fmt.Println(gojsonq.New().JSONString(jsonStr).Find("data.answer"))
+	//fmt.Println(json)
+	//fmt.Println(gojsonq.New().JSONString(jsonStr).Find("data.answer"))
 	if gojsonq.New().JSONString(jsonStr).Find("data.answer") == nil {
 		return nil
 	}

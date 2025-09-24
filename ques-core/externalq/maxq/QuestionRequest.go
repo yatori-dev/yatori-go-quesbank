@@ -78,8 +78,8 @@ func Request(token string, question entity.Question) *entity.Question {
 	if int(json.Find("code").(float64)) != 1 {
 		return nil
 	}
-	fmt.Println(json)
-	fmt.Println(gojsonq.New().JSONString(jsonStr).Find("data"))
+	//fmt.Println(json)
+	//fmt.Println(gojsonq.New().JSONString(jsonStr).Find("data"))
 	if gojsonq.New().JSONString(jsonStr).Find("data") == nil {
 		return nil
 	}

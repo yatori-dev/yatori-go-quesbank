@@ -41,7 +41,7 @@ setting:
 # AI答题模板---------------------------------------------------------------------
 #    - answerType: AI  #代表该配置为AI答题
 #      answerLabel: "" #该题库配置的唯一标签标识，随便你怎么填写，但是不得与其他标签重复
-#      aiType: "TONGYI" #智普：CHATGLM、星火：XINGHUO、通义千问：TONGYI、豆包：DOUBAO、其他模型：OTHER
+#      aiType: "TONGYI" #智普：CHATGLM、星火：XINGHUO、通义千问：TONGYI、豆包：DOUBAO、秘塔AI：METAAI、其他模型：OTHER
 #      aiUrl: "" #默认不填，除非你用的不是上面所指明的AI模型，比如ChatGPT
 #      aiModel: "" #AI模型，不填则使用yatori默认选择的模型，如果你用的豆包则必填并且填的是接入点ID非模型名称，比如ep-2024xxxxx
 #      API_KEY: " #AI平台对应的apikey

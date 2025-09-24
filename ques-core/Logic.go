@@ -35,11 +35,13 @@ func Research(anSet []config.AnswerSetting, question entity.Question) *entity.DT
 		}
 		//如果查询到题目则返回查询，否则后面就返回空
 		if que != nil {
+			log.Println(que.String())
 			//自动缓存逻辑
 			AutoCaches(v.CacheTargetList, anSet, que.Question)
 			return que
 		}
 	}
+	log.Println(question.String())
 	return nil
 }
 

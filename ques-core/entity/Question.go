@@ -69,3 +69,18 @@ func (s *StringArray) Scan(value interface{}) error {
 	}
 	return json.Unmarshal(bytes, s)
 }
+func (s *Question) String() string {
+	marshal, err := json.Marshal(s)
+	if err != nil {
+		return fmt.Sprintf("%x", s)
+	}
+	return string(marshal)
+}
+
+func (s *DTOQuestion) String() string {
+	marshal, err := json.Marshal(s)
+	if err != nil {
+		return fmt.Sprintf("%x", s)
+	}
+	return string(marshal)
+}
