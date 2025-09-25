@@ -77,29 +77,8 @@ func AICheck(url, model, apiKey string, aiType aitype.AiType) error {
 	if apiKey == "" {
 		return errors.New("无效apiKey，请检查apiKey是否正确填写")
 	}
-
-	switch aiType {
-	case aitype.ChatGLM:
-		_, err := ChatGLMChatReplyApi(model, apiKey, aiChatMessages, 3, nil)
-		return err
-	case aitype.XingHuo:
-		_, err := XingHuoChatReplyApi(model, apiKey, aiChatMessages, 3, nil)
-		return err
-	case aitype.TongYi:
-		_, err := TongYiChatReplyApi(model, apiKey, aiChatMessages, 3, nil)
-		return err
-	case aitype.DouBao:
-		_, err := DouBaoChatReplyApi(model, apiKey, aiChatMessages, 3, nil)
-		return err
-	case aitype.OpenAi:
-		_, err := OpenAiReplyApi(model, apiKey, aiChatMessages, 3, nil)
-		return err
-	case aitype.Other:
-		_, err := OtherChatReplyApi(url, model, apiKey, aiChatMessages, 3, nil)
-		return err
-	default:
-		return errors.New(string("AI Type: " + aiType))
-	}
+	_, err := AggregationAIApi(url, model, aiType, aiChatMessages, apiKey)
+	return err
 }
 
 // TongYiChatReplyApi 通义千问API
