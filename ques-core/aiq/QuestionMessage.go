@@ -9,12 +9,12 @@ import (
 
 // 单选题处理策略
 func handleSingleChoice(topic entity.Question) AIChatMessages {
-	problem := buildProblemHeader("单选题", topic)
+	problem := buildProblemHeader(topic.Type, topic)
 	return AIChatMessages{Messages: []Message{
 		{Role: "system", Content: `接下来你只需要回答选项对应内容即可...回答格式严格遵循json范式，比如：["选项1内容"]`},
 		{Role: "system", Content: "就算你不知道选什么也随机选，答题过程中你无需回答任何解释，只需按照预定json范式输出！！！"},
 		{Role: "system", Content: exampleSingleChoice()},
-		{Role: "system", Content: problem},
+		{Role: "user", Content: problem},
 	}}
 }
 
@@ -31,6 +31,10 @@ func BuildAiQuestionMessage(topic entity.Question) AIChatMessages {
 		return handleFillInTheBlank(topic)
 	case qtype.ShortAnswer:
 		return handleShortAnswer(topic)
+	case qtype.TermExplanation:
+		return handleTermExplanationAnswer(topic)
+	case qtype.Essay:
+		return handleEssayAnswer(topic)
 	}
 	return AIChatMessages{}
 }
@@ -50,7 +54,7 @@ func handleMultipleChoice(topic entity.Question) AIChatMessages {
 		{Role: "system", Content: "接下来你只需要回答选项对应内容即可...格式：[\"选项1\",\"选项2\"]"},
 		{Role: "system", Content: "就算你不知道选什么也随机选...无需回答任何解释！！！"},
 		{Role: "system", Content: exampleMultipleChoice()},
-		{Role: "system", Content: problem},
+		{Role: "user", Content: problem},
 	}}
 }
 
@@ -61,7 +65,7 @@ func handleTrueFalse(topic entity.Question) AIChatMessages {
 		{Role: "system", Content: "接下来你只需要回答“正确”或者“错误”即可...格式：[\"正确\"]"},
 		{Role: "system", Content: "就算你不知道选什么也随机选...无需回答任何解释！！！"},
 		{Role: "system", Content: exampleTrueFalse()},
-		{Role: "system", Content: problem},
+		{Role: "user", Content: problem},
 	}}
 }
 
@@ -69,10 +73,10 @@ func handleTrueFalse(topic entity.Question) AIChatMessages {
 func handleFillInTheBlank(topic entity.Question) AIChatMessages {
 	problem := buildProblemHeader("填空题", topic)
 	return AIChatMessages{Messages: []Message{
-		{Role: "system", Content: "其中，“（answer_数字）”相关字样的地方是你需要填写答案的地方...格式：[\"答案1\",\"答案2\"]"},
+		{Role: "system", Content: "其中，“（answer_数字）”相关字样的地方是你需要填写答案的地方，回答时请严格遵循json格式：[\"答案1\",\"答案2\"]"},
 		{Role: "system", Content: "就算你不知道选什么也随机选...无需回答任何解释！！！"},
 		{Role: "system", Content: exampleFillInTheBlank()},
-		{Role: "system", Content: problem},
+		{Role: "user", Content: problem},
 	}}
 }
 
@@ -80,10 +84,30 @@ func handleFillInTheBlank(topic entity.Question) AIChatMessages {
 func handleShortAnswer(topic entity.Question) AIChatMessages {
 	problem := buildProblemHeader("简答题", topic)
 	return AIChatMessages{Messages: []Message{
-		{Role: "system", Content: "这是一个简答题...格式：[\"答案\"]，注意不要拆分答案！！！"},
-		{Role: "system", Content: "就算你不知道选什么也随机选...无需回答任何解释！！！"},
+		{Role: "system", Content: "这是一个简答题，回答时请严格遵循json格式：[\"答案\"]，注意不要拆分答案！！！"},
+		//{Role: "system", Content: "就算你不知道选什么也随机选...无需回答任何解释！！！"},
 		{Role: "system", Content: exampleShortAnswer()},
-		{Role: "system", Content: problem},
+		{Role: "user", Content: problem},
+	}}
+}
+
+// 名词解释处理策略
+func handleTermExplanationAnswer(topic entity.Question) AIChatMessages {
+	problem := buildProblemHeader(topic.Type, topic)
+	return AIChatMessages{Messages: []Message{
+		{Role: "system", Content: "这是一个名词解释题，回答时请严格遵循json格式：[\"答案\"]，注意不要拆分答案！！！"},
+		{Role: "system", Content: exampleTermExplanationAnswer()},
+		{Role: "user", Content: problem},
+	}}
+}
+
+// 论述题处理策略
+func handleEssayAnswer(topic entity.Question) AIChatMessages {
+	problem := buildProblemHeader(topic.Type, topic)
+	return AIChatMessages{Messages: []Message{
+		{Role: "system", Content: `这是一个论述题，回答时请严格遵循json格式：["答案"]，注意不要拆分答案！！！`},
+		{Role: "system", Content: exampleEssayAnswer()},
+		{Role: "user", Content: problem},
 	}}
 }
 
@@ -107,7 +131,12 @@ func buildProblemHeader(topicType string, topic entity.Question) string {
 			sprintf += selectStr[i] + "." + option + "\n"
 		}
 	case qtype.FillInTheBlank: //填空题
-	case qtype.ShortAnswer:
+		for i, option := range topic.Options {
+			sprintf += selectStr[i] + "." + option + "\n"
+		}
+	case qtype.ShortAnswer: //简答题
+	case qtype.TermExplanation: //名词解释
+	case qtype.Essay: //论述题
 	}
 
 	return sprintf
@@ -124,7 +153,7 @@ B. 1949年10月1日
 C. 1949年09月1日
 D. 2002年10月1日
 
-那么你应该回答选项B的内容："["1949年10月1日"]"。注意不要携带A，B，C，D等选项前缀。`
+那么你应该回答选项B的内容：["1949年10月1日"]。注意不要携带A，B，C，D等选项前缀。`
 }
 
 // 多选题示例
@@ -138,7 +167,7 @@ B. 资本有机构成呈现不断降低趋势的根本原因
 C. 社会财富占有两极分化的重要原因
 D. 资本主义社会失业现象产生的根源
 
-那么你应该回答选项A、B、D的内容："["资本主义扩大再生产的源泉","社会财富占有两极分化的重要原因","资本主义社会失业现象产生的根源"]注意不要携带A，B，C，D等选项前缀。"`
+那么你应该回答选项A、B、D的内容：["资本主义扩大再生产的源泉","社会财富占有两极分化的重要原因","资本主义社会失业现象产生的根源"]，注意不要携带A，B，C，D等选项前缀。`
 }
 
 // 判断题示例
@@ -150,7 +179,7 @@ func exampleTrueFalse() string {
 A. 正确
 B. 错误
 
-那么你应该回答选项A的内容："["正确"]"。注意不要携带A，B，C，D等选项前缀。`
+那么你应该回答选项A的内容：["正确"]。注意不要携带A，B，C，D等选项前缀。`
 }
 
 // 填空题示例
@@ -161,7 +190,7 @@ func exampleFillInTheBlank() string {
 题目内容：新中国成立于（ ）年。
 答案：1949
 
-那么你应该回答："["1949"]"`
+那么你应该回答：["1949"]`
 }
 
 func exampleShortAnswer() string {
@@ -171,5 +200,27 @@ func exampleShortAnswer() string {
 题目内容：请简述中国和外国的国别 differences
 答案：中国和外国的国别 differences
 
-那么你应该回答： "["中国和外国的国别 differences"]"`
+那么你应该回答： ["中国和外国的国别 differences"]`
+}
+
+// 名词解释
+func exampleTermExplanationAnswer() string {
+	return `比如：
+试卷名称：考试
+题目类型：名词解释
+题目内容：绿色设计
+答案：绿色设计是指在产品、建筑、工程或系统设计的全过程中，将环境保护和可持续发展理念融入其中的一种设计方法。
+
+那么你应该回答： ["绿色设计是指在产品、建筑、工程或系统设计的全过程中，将环境保护和可持续发展理念融入其中的一种设计方法。"]`
+}
+
+// 论述题
+func exampleEssayAnswer() string {
+	return `比如：
+试卷名称：考试
+题目类型：论述题
+题目内容：试述设计艺术的构成元素
+答案：设计艺术的构成元素包括点、线、面、形体、色彩、质感与空间等。它们相互依存、互为补充，通过合理的组织和运用，形成和谐、统一而富有美感的设计作品。
+
+那么你应该回答（回答字数不能少于500字）： ["设计艺术的构成元素包括点、线、面、形体、色彩、质感与空间等。它们相互依存、互为补充，通过合理的组织和运用，形成和谐、统一而富有美感的设计作品。"]`
 }

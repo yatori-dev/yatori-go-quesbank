@@ -60,8 +60,6 @@ func AggregationAIApi(url,
 
 // AICheck AI可用性检测
 func AICheck(url, model, apiKey string, aiType aitype.AiType) error {
-	AiMut.Lock()
-	defer AiMut.Unlock()
 	aiChatMessages := AIChatMessages{
 		Messages: []Message{
 			{
@@ -589,7 +587,7 @@ func MetaAIReplyApi(model, apiKey string, aiChatMessages AIChatMessages, retryNu
 	}
 	response, ok := responseMap["answer"].(string)
 	if !ok || len(response) == 0 {
-		return "", fmt.Errorf(responseMap["answer"].(string))
+		return "", fmt.Errorf(string(body))
 	}
 	return response, nil
 }
