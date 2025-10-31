@@ -3,11 +3,12 @@ package aitype
 type AiType string
 
 const (
-	ChatGLM AiType = "CHATGLM"
-	XingHuo AiType = "XINGHUO"
-	TongYi  AiType = "TONGYI"
-	DouBao  AiType = "DOUBAO"
-	OpenAi  AiType = "OPENAI"
-	MeTaAi  AiType = "METAAI"
-	Other   AiType = "OTHER"
+	ChatGLM  AiType = "CHATGLM"
+	XingHuo  AiType = "XINGHUO"
+	TongYi   AiType = "TONGYI"
+	DouBao   AiType = "DOUBAO"
+	OpenAi   AiType = "OPENAI"
+	DeepSeek AiType = "DEEPSEEK"
+	MeTaAi   AiType = "METAAI"
+	Other    AiType = "OTHER"
 )
