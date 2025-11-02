@@ -51,10 +51,11 @@ func questionRequest(token string, question entity.Question, retry int, lastErr 
 		fmt.Println(err)
 		return "", err
 	}
+
 	//fmt.Println(string(body))
-	if strings.Contains(string(body), "请求无效") {
+	if strings.Contains(string(body), "请求无效") || string(body) == "" {
 		time.Sleep(1 * time.Second)
-		return questionRequest(token, question, retry, errors.New("请求无效"))
+		return questionRequest(token, question, retry-1, errors.New("请求无效"))
 	}
 	return string(body), nil
 }
@@ -78,9 +79,10 @@ func maxArray(arrs ...[]string) []string {
 // "data": "活期储蓄###整存整取###定活两便###通知存款"
 // }
 func Request(token string, question entity.Question) *entity.Question {
-	jsonStr, err := questionRequest(token, question, 3, nil)
+	jsonStr, err := questionRequest(token, question, 5, nil)
 	if err != nil {
 		fmt.Println(err)
+		return nil
 	}
 	//jsonStr := QuestionRequest(token, question.Content, question.Type)
 	//jsonMap := gojsonq.New().JSONString(jsonStr)
