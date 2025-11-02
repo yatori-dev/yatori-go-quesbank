@@ -54,7 +54,7 @@ func EsQuestQuestionForContentMachOne(client *es9.TypedClient, indexName string,
 		fmt.Printf("search document failed, err:%v\n", err)
 		return nil
 	}
-	fmt.Printf("total: %d\n", resp.Hits.Total.Value)
+	//fmt.Printf("total: %d\n", resp.Hits.Total.Value)
 	if resp.Hits.Total.Value == 0 {
 		return nil
 	}

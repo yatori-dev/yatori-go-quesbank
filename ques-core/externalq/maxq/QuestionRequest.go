@@ -2,19 +2,21 @@ package yanxi
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 	"yatori-go-quesbank/ques-core/entity"
-
-	"github.com/thedevsaddam/gojsonq"
 )
 
 // [{"name":"言溪题库","homepage":"https://tk.enncy.cn/","url":"https://tk.enncy.cn/query","method":"get","type":"GM_xmlhttpRequest","contentType":"json","data":{"token":"9e20541d49204bf0813a76e6f3bfdc7e","title":"${title}","options":"${options}","type":"${type}"},"handler":"return (res)=>res.code === 0 ? [res.data.answer, undefined] : [res.data.question,res.data.answer]"},{"name":"网课小工具题库（GO题）","homepage":"https://cx.icodef.com/","url":"https://cx.icodef.com/wyn-nb?v=4","method":"post","type":"GM_xmlhttpRequest","data":{"question":"${title}"},"headers":{"Content-Type":"application/x-www-form-urlencoded","Authorization":""},"handler":"return  (res)=> res.code === 1 ? [undefined,res.data] : [res.msg,undefined]"}]
-func questionRequest(token string, question entity.Question) string {
-
+func questionRequest(token string, question entity.Question, retry int, lastErr error) (string, error) {
+	if retry < 0 {
+		return "", lastErr
+	}
 	urlStr := "https://max.tlicf.com/Interface/xxt/?key=" + token + "&question=" + url.QueryEscape(question.Content) + "&info=" + url.QueryEscape(question.Type)
 	if len(question.Options) >= 1 {
 		marshal, err := json.Marshal(question.Options)
@@ -30,7 +32,7 @@ func questionRequest(token string, question entity.Question) string {
 
 	if err != nil {
 		fmt.Println(err)
-		return ""
+		return "", err
 	}
 	req.Header.Add("User-Agent", "Apifox/1.0.0 (https://apifox.com)")
 	req.Header.Add("Accept", "*/*")
@@ -40,17 +42,21 @@ func questionRequest(token string, question entity.Question) string {
 	res, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
-		return ""
+		return "", err
 	}
 	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println(err)
-		return ""
+		return "", err
 	}
-	fmt.Println(string(body))
-	return string(body)
+	//fmt.Println(string(body))
+	if strings.Contains(string(body), "请求无效") {
+		time.Sleep(1 * time.Second)
+		return questionRequest(token, question, retry, errors.New("请求无效"))
+	}
+	return string(body), nil
 }
 
 func maxArray(arrs ...[]string) []string {
@@ -72,19 +78,29 @@ func maxArray(arrs ...[]string) []string {
 // "data": "活期储蓄###整存整取###定活两便###通知存款"
 // }
 func Request(token string, question entity.Question) *entity.Question {
-	jsonStr := questionRequest(token, question)
+	jsonStr, err := questionRequest(token, question, 3, nil)
+	if err != nil {
+		fmt.Println(err)
+	}
 	//jsonStr := QuestionRequest(token, question.Content, question.Type)
-	json := gojsonq.New().JSONString(jsonStr)
-	if int(json.Find("code").(float64)) != 1 {
+	//jsonMap := gojsonq.New().JSONString(jsonStr)
+	var jsonMap map[string]interface{}
+	json.Unmarshal([]byte(jsonStr), &jsonMap)
+	_, turnStatus := jsonMap["code"].(float64)
+
+	if !turnStatus {
+		return nil
+	}
+	if int(jsonMap["code"].(float64)) != 1 {
 		return nil
 	}
 	//fmt.Println(json)
 	//fmt.Println(gojsonq.New().JSONString(jsonStr).Find("data"))
-	if gojsonq.New().JSONString(jsonStr).Find("data") == nil {
+	if jsonMap["data"] == nil {
 		return nil
 	}
 	//第一种回复类型
-	answer1 := strings.Split(gojsonq.New().JSONString(jsonStr).Find("data").(string), "###")
+	answer1 := strings.Split(jsonMap["data"].(string), "###")
 	//去空
 	answer1 = func(v []string) []string {
 		res := []string{}
@@ -98,7 +114,7 @@ func Request(token string, question entity.Question) *entity.Question {
 	}(answer1)
 
 	// 第二种回复类型
-	answer2 := strings.Split(strings.ReplaceAll(strings.ReplaceAll(gojsonq.New().JSONString(jsonStr).Find("data").(string), "[", ""), "]", ""), ",")
+	answer2 := strings.Split(strings.ReplaceAll(strings.ReplaceAll(jsonMap["data"].(string), "[", ""), "]", ""), ",")
 
 	question.Answers = maxArray(answer1, answer2)
 	//检测是否为选项字母答案，如果是，则转换
