@@ -33,7 +33,7 @@ setting:
 # 三方题库模板--------------------------------------------------------------------
 #    - answerType: EXTERNAL #代表该配置为外置三方题库，固定写法
 #      answerLabel: "" #该题库配置的唯一标签标识，随便你怎么填写，但是不得与其他标签重复
-#      exType: MAX  #这里填的外挂题库的类型，目前支持：MAX（max题库），YANXI（言溪题库）
+#      exType: MAX  #这里填的外挂题库的类型，目前支持：MAX（max题库），YANXI（言溪题库），ZDS（早点睡题库）
 #      exToken: ""  #题库Token
 #      cacheTargetList: [] # 缓存目标，如果搜到题目则缓存到指定answerLabel标签的题库里面（注意对应标签的题库只能是Sqlite类型或ES类型）
 
