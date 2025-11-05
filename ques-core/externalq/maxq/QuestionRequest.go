@@ -10,14 +10,16 @@ import (
 	"strings"
 	"time"
 	"yatori-go-quesbank/ques-core/entity"
+	"yatori-go-quesbank/utils/qutils"
 )
 
 // [{"name":"言溪题库","homepage":"https://tk.enncy.cn/","url":"https://tk.enncy.cn/query","method":"get","type":"GM_xmlhttpRequest","contentType":"json","data":{"token":"9e20541d49204bf0813a76e6f3bfdc7e","title":"${title}","options":"${options}","type":"${type}"},"handler":"return (res)=>res.code === 0 ? [res.data.answer, undefined] : [res.data.question,res.data.answer]"},{"name":"网课小工具题库（GO题）","homepage":"https://cx.icodef.com/","url":"https://cx.icodef.com/wyn-nb?v=4","method":"post","type":"GM_xmlhttpRequest","data":{"question":"${title}"},"headers":{"Content-Type":"application/x-www-form-urlencoded","Authorization":""},"handler":"return  (res)=> res.code === 1 ? [undefined,res.data] : [res.msg,undefined]"}]
 func questionRequest(token string, question entity.Question, retry int, lastErr error) (string, error) {
+	resContent := qutils.RemoveLeadingLabel(question.Content)
 	if retry < 0 {
 		return "", lastErr
 	}
-	urlStr := "https://max.tlicf.com/Interface/xxt/?key=" + token + "&question=" + url.QueryEscape(question.Content) + "&info=" + url.QueryEscape(question.Type)
+	urlStr := "https://max.tlicf.com/Interface/xxt/?key=" + token + "&question=" + url.QueryEscape(resContent) + "&info=" + url.QueryEscape(question.Type)
 	if len(question.Options) >= 1 {
 		marshal, err := json.Marshal(question.Options)
 		if err == nil {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"yatori-go-quesbank/ques-core/entity"
 
 	es9 "github.com/elastic/go-elasticsearch/v9"
@@ -31,22 +32,34 @@ func CompareQueryPercent(content string, query string) float64 {
 
 // 根据题目查询
 func EsQuestQuestionForContentMachOne(client *es9.TypedClient, indexName string, esQuestion entity.EsQuestion) *entity.Question {
+	queries := []types.Query{
+		//匹配内容字段（模糊匹配）
+		{
+			Match: map[string]types.MatchQuery{
+				"content": {Query: esQuestion.Content, Fuzziness: "AUTO"},
+			},
+		},
+		//匹配题目类型
+		{
+			Term: map[string]types.TermQuery{
+				"type.keyword": {Value: esQuestion.Type},
+			},
+		},
+		//判断options中是否包含某个选项值
+	}
+	//如果是选择题，则再加上选项匹配的可能性
+	if (esQuestion.Type == "单选题" || esQuestion.Type == "多选题") && len(esQuestion.Options) > 0 {
+		queries = append(queries, types.Query{
+			Term: map[string]types.TermQuery{
+				"options.keyword": {Value: esQuestion.Options[0]}, // 假设你结构体中有字段 Option
+			},
+		})
+	}
 	resp, err := client.Search().
 		Index(indexName).
 		Query(&types.Query{
 			Bool: &types.BoolQuery{
-				Must: []types.Query{
-					{
-						Match: map[string]types.MatchQuery{
-							"content": {Query: esQuestion.Content, Fuzziness: "AUTO"},
-						},
-					},
-					{
-						Term: map[string]types.TermQuery{
-							"type.keyword": {Value: esQuestion.Type},
-						},
-					},
-				},
+				Must: queries,
 			},
 		}).Size(1).
 		Do(context.Background())
@@ -125,4 +138,46 @@ func EsInsertIfNot(client *es9.TypedClient, indexName string, esQuestion entity.
 		}
 	}
 	return nil
+}
+
+// 分页查询
+func EsQueryAll(client *es9.TypedClient, indexName string, pageNum, pageSize int) []entity.Question {
+	from := (pageNum - 1) * pageSize
+	if from < 0 {
+		from = 0
+	}
+
+	// 这里只用最“保守”、所有版本几乎都有的字段：
+	// Index / From / Size / Query
+	req := client.Search().
+		Index(indexName).
+		From(from).
+		Size(pageSize).
+		Query(&types.Query{
+			MatchAll: &types.MatchAllQuery{},
+		})
+
+	// 发请求
+	res, err := req.Do(context.Background())
+	if err != nil {
+		log.Printf("es search error: %v", err)
+		return nil
+	}
+
+	if len(res.Hits.Hits) == 0 {
+		return nil
+	}
+
+	qs := make([]entity.Question, 0, len(res.Hits.Hits))
+	for _, h := range res.Hits.Hits {
+		var q entity.Question
+		if err := json.Unmarshal(h.Source_, &q); err != nil {
+			// 某条解析失败就跳过，不影响其他的
+			log.Printf("unmarshal hit error: %v", err)
+			continue
+		}
+		qs = append(qs, q)
+	}
+
+	return qs
 }

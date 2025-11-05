@@ -5,16 +5,16 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strings"
 	"yatori-go-quesbank/ques-core/entity"
+	"yatori-go-quesbank/utils/qutils"
 
 	"github.com/thedevsaddam/gojsonq"
 )
 
 // [{"name":"言溪题库","homepage":"https://tk.enncy.cn/","url":"https://tk.enncy.cn/query","method":"get","type":"GM_xmlhttpRequest","contentType":"json","data":{"token":"9e20541d49204bf0813a76e6f3bfdc7e","title":"${title}","options":"${options}","type":"${type}"},"handler":"return (res)=>res.code === 0 ? [res.data.answer, undefined] : [res.data.question,res.data.answer]"},{"name":"网课小工具题库（GO题）","homepage":"https://cx.icodef.com/","url":"https://cx.icodef.com/wyn-nb?v=4","method":"post","type":"GM_xmlhttpRequest","data":{"question":"${title}"},"headers":{"Content-Type":"application/x-www-form-urlencoded","Authorization":""},"handler":"return  (res)=> res.code === 1 ? [undefined,res.data] : [res.msg,undefined]"}]
 func questionRequest(token string, question entity.Question, retry int, lastErr error) (string, error) {
-	resContent := RemoveLeadingLabel(question.Content)
+	resContent := qutils.RemoveLeadingLabel(question.Content)
 
 	urlStr := "http://tiku2.mfax.top/cs?token=" + token + "&q=" + url.QueryEscape(resContent)
 	method := "GET"
@@ -46,11 +46,6 @@ func questionRequest(token string, question entity.Question, retry int, lastErr 
 	return string(body), nil
 }
 
-// 只会移除字符串开头的第一个匹配项，其他位置不影响。
-func RemoveLeadingLabel(s string) string {
-	re := regexp.MustCompile(`(?m)^\s*\d+\.(?:[[【][^]】]+[]】]|\s*[^\s[【]+)\s*`)
-	return re.ReplaceAllString(s, "")
-}
 func maxArray(arrs ...[]string) []string {
 	if len(arrs) == 0 {
 		return nil
@@ -121,22 +116,6 @@ func Request(token string, question entity.Question) *entity.Question {
 		}
 		return res
 	}(answer3)
-
-	// 第二种回复类型
-	answer4 := strings.Split(strings.ReplaceAll(strings.ReplaceAll(gojsonq.New().JSONString(jsonStr).Find("data").(string), "[", ""), "]", ""), ",")
-	//去空
-	answer4 = func(v []string) []string {
-		res := []string{}
-		for _, answer := range v {
-			if answer != "" {
-				res = append(res, answer)
-			}
-
-		}
-		return res
-	}(answer4)
-	//赋值可以分组最大的那个作为答案
-	question.Answers = maxArray(answer1, answer2, answer3, answer4)
 
 	//检测是否为选项字母答案，如果是，则转换
 	for i, option := range question.Answers {

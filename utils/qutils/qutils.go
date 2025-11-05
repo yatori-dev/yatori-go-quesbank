@@ -1,6 +1,9 @@
 package qutils
 
-import "sort"
+import (
+	"regexp"
+	"sort"
+)
 
 // 计算两个字符串的Levenshtein距离
 func Levenshtein(a, b string) int {
@@ -62,4 +65,10 @@ func SimilarityArrayAndSort(target string, v []string) []int {
 		return false
 	})
 	return nil
+}
+
+// 移除题目开头的题目类型文字。
+func RemoveLeadingLabel(s string) string {
+	re := regexp.MustCompile(`(?m)^\s*\d+\.(?:[[【][^]】]+[]】]|\s*[^\s[【]+)\s*`)
+	return re.ReplaceAllString(s, "")
 }

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"yatori-go-quesbank/ques-core/entity"
 	"yatori-go-quesbank/ques-core/entity/qtype"
+	"yatori-go-quesbank/utils/qutils"
 
 	"github.com/thedevsaddam/gojsonq"
 )
@@ -55,7 +56,8 @@ func maxArray(arrs ...[]string) []string {
 // {"code":0,"data":{"question":"无","answer":"题目不能为空"},"message":"请求失败"}
 // {"code":1,"data":{"question":"测试题目","answer":"用于检验学员受训后知识、技能以及绩效状况的一系列问题或评价方法。","times":98},"message":"请求成功"}
 func Request(token string, question entity.Question) *entity.Question {
-	jsonStr := questionRequest(token, question.Content, qtype.Index(question.Type))
+	resContent := qutils.RemoveLeadingLabel(question.Content)
+	jsonStr := questionRequest(token, resContent, qtype.Index(question.Type))
 	//jsonStr := QuestionRequest(token, question.Content, question.Type)
 	json := gojsonq.New().JSONString(jsonStr)
 	if int(json.Find("code").(float64)) != 1 {
