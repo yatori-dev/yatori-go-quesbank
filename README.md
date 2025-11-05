@@ -19,5 +19,8 @@
 | 分布式集成题库系统                                                                                                                  | ✅    |
 | 灵活配置文件                                                                                                                     | ✅    |
 
+## 🎯使用文档
+[点击进入](https://yatori-dev.github.io/yatori-docs/yatori-go-quesbank/docs.html)
+
 ## 🎯推荐题库配置顺序
 * ElasticSearch题库----->三方题库----->AI自动答题
