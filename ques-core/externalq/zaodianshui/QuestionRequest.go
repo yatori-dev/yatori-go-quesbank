@@ -116,6 +116,9 @@ func Request(token string, question entity.Question) *entity.Question {
 		}
 		return res
 	}(answer3)
+	
+	//赋值可以分组最大的那个作为答案
+	question.Answers = maxArray(answer1, answer2, answer3)
 
 	//检测是否为选项字母答案，如果是，则转换
 	for i, option := range question.Answers {
