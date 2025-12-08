@@ -26,7 +26,7 @@ func CompareQueryPercent(content string, query string) float64 {
 			}
 		}
 	}
-	percent := float64(count) / float64(len(queryRunes)) * 100
+	percent := float64(count) / float64(max(len(queryRunes), len(content))) * 100
 	return percent
 }
 
