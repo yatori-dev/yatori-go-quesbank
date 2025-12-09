@@ -25,6 +25,7 @@ env:
   RELEASE_DIR: release
   RELEASE_NOTICES: |
     - [🔧] 更新依赖，修补高危漏洞
+    - [🔧] 修复题目匹配算法BUG导致无法正常匹配ES题目问题
     - [👏] 放宽AI同时请求量
 
 jobs:
