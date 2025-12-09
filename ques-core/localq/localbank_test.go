@@ -128,7 +128,7 @@ func TestImportES(t *testing.T) {
 	}
 
 	file := "backup.ndjson"
-	dstIndex := "question2"
+	dstIndex := "questions1"
 
 	// 从文件导入到新的 index
 	if err := ImportFromFile(client, dstIndex, file); err != nil {
