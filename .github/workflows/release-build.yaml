@@ -24,7 +24,7 @@ env:
   VERSION: ${{ github.ref_name }}  # Dynamic version based on the tag name
   RELEASE_DIR: release
   RELEASE_NOTICES: |
-    - [👏] 优化本地题库检索算法
+    - [🔧] 更新依赖，修补高危漏洞
     
 
 jobs:
