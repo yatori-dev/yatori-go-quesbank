@@ -11,7 +11,7 @@ on:
       tag_name:
         description: 'Tag name for the release'
         required: true
-        default: 'v0.0.2-Beta.2'  # Default tag name
+        default: 'v0.0.2-Beta.3'  # Default tag name
 
 permissions:
   contents: write  # Allow writing to GitHub releases
@@ -25,7 +25,7 @@ env:
   RELEASE_DIR: release
   RELEASE_NOTICES: |
     - [🔧] 更新依赖，修补高危漏洞
-    
+    - [👏] 放宽AI同时请求量
 
 jobs:
   # Linux build job
