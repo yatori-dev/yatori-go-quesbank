@@ -60,7 +60,11 @@ func Request(token string, question entity.Question) *entity.Question {
 	jsonStr := questionRequest(token, resContent, qtype.Index(question.Type))
 	//jsonStr := QuestionRequest(token, question.Content, question.Type)
 	json := gojsonq.New().JSONString(jsonStr)
-	if int(json.Find("code").(float64)) != 1 {
+	if code, ok := json.Find("code").(float64); ok {
+		if int(code) != 1 {
+			return nil
+		}
+	} else {
 		return nil
 	}
 	//fmt.Println(json)

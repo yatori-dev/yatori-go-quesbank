@@ -68,7 +68,15 @@ func Request(token string, question entity.Question) *entity.Question {
 	}
 
 	json := gojsonq.New().JSONString(jsonStr)
-	if int(json.Find("code").(float64)) != 1 {
+	if json.Find("code") == nil {
+
+	}
+
+	if code, ok := json.Find("code").(float64); ok {
+		if int(code) != 1 {
+			return nil
+		}
+	} else {
 		return nil
 	}
 
@@ -116,7 +124,7 @@ func Request(token string, question entity.Question) *entity.Question {
 		}
 		return res
 	}(answer3)
-	
+
 	//赋值可以分组最大的那个作为答案
 	question.Answers = maxArray(answer1, answer2, answer3)
 
