@@ -432,7 +432,7 @@ func OpenAiReplyApi(model,
 	resp, err := client.Do(req)
 	if err != nil {
 		time.Sleep(100 * time.Millisecond)
-		return DouBaoChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to execute HTTP request: %v", err))
+		return OpenAiReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to execute HTTP request: %v", err))
 
 	}
 	defer resp.Body.Close()
@@ -440,13 +440,13 @@ func OpenAiReplyApi(model,
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		time.Sleep(100 * time.Millisecond)
-		return DouBaoChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to read response body: %v", err))
+		return OpenAiReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to read response body: %v", err))
 	}
 
 	var responseMap map[string]interface{}
 	if err := json.Unmarshal(body, &responseMap); err != nil {
 		time.Sleep(100 * time.Millisecond)
-		return DouBaoChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to parse JSON response: %v    response body: %s", err, body))
+		return OpenAiReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to parse JSON response: %v    response body: %s", err, body))
 	}
 
 	choices, ok := responseMap["choices"].([]interface{})
@@ -508,7 +508,7 @@ func DeepSeekChatReplyApi(model,
 	resp, err := client.Do(req)
 	if err != nil {
 		time.Sleep(100 * time.Millisecond)
-		return DouBaoChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to execute HTTP request: %v", err))
+		return DeepSeekChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to execute HTTP request: %v", err))
 
 	}
 	defer resp.Body.Close()
@@ -516,13 +516,13 @@ func DeepSeekChatReplyApi(model,
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		time.Sleep(100 * time.Millisecond)
-		return DouBaoChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to read response body: %v", err))
+		return DeepSeekChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to read response body: %v", err))
 	}
 
 	var responseMap map[string]interface{}
 	if err := json.Unmarshal(body, &responseMap); err != nil {
 		time.Sleep(100 * time.Millisecond)
-		return DouBaoChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to parse JSON response: %v    response body: %s", err, body))
+		return DeepSeekChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to parse JSON response: %v    response body: %s", err, body))
 	}
 
 	choices, ok := responseMap["choices"].([]interface{})
@@ -565,7 +565,7 @@ func SiliconFlowReplyApi(model,
 		Timeout:   60 * time.Second, // Set connection and read timeout
 	}
 	if model == "" {
-		model = "deepseek-chat" //默认模型
+		model = "Qwen/Qwen2.5-7B-Instruct" //默认模型
 	}
 	url := "https://api.siliconflow.cn/v1/chat/completions"
 	requestBody := map[string]interface{}{
@@ -591,7 +591,7 @@ func SiliconFlowReplyApi(model,
 	resp, err := client.Do(req)
 	if err != nil {
 		time.Sleep(100 * time.Millisecond)
-		return DouBaoChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to execute HTTP request: %v", err))
+		return SiliconFlowReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to execute HTTP request: %v", err))
 
 	}
 	defer resp.Body.Close()
@@ -599,18 +599,18 @@ func SiliconFlowReplyApi(model,
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		time.Sleep(100 * time.Millisecond)
-		return DouBaoChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to read response body: %v", err))
+		return SiliconFlowReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to read response body: %v", err))
 	}
 
 	var responseMap map[string]interface{}
 	if err := json.Unmarshal(body, &responseMap); err != nil {
 		time.Sleep(100 * time.Millisecond)
-		return DouBaoChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to parse JSON response: %v    response body: %s", err, body))
+		return SiliconFlowReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to parse JSON response: %v    response body: %s", err, body))
 	}
 	//处理异常
 	resultMsg, ok := responseMap["message"].(string)
 	if ok && strings.Contains(resultMsg, "Request processing has failed") {
-		return DeepSeekChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("AI回复内容未找到，AI返回信息：%s", string(body)))
+		return SiliconFlowReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("AI回复内容未找到，AI返回信息：%s", string(body)))
 	}
 	choices, ok := responseMap["choices"].([]interface{})
 	if !ok || len(choices) == 0 {

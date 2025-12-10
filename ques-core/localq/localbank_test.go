@@ -137,6 +137,52 @@ func TestImportES(t *testing.T) {
 	fmt.Println("Import from file completed.")
 }
 
+// 题库去重
+func TestReData(t *testing.T) {
+	inputFile := "./backup.ndjson"
+	outputFile := "./output.ndjson"
+	err := DedupLines(inputFile, outputFile)
+	if err != nil {
+		fmt.Println("Error:", err)
+	} else {
+		fmt.Println("去重完成！结果写入:", outputFile)
+	}
+}
+
+// DedupLines 按行去重并写入新文件（不改变顺序）
+func DedupLines(input, output string) error {
+	in, err := os.Open(input)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(output)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	scanner := bufio.NewScanner(in)
+	writer := bufio.NewWriter(out)
+
+	seen := make(map[string]bool)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !seen[line] {
+			seen[line] = true
+			writer.WriteString(line + "\n")
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	return writer.Flush()
+}
+
 //////////////////////////////////////////////////////
 // 导出：使用 scroll → 写入 NDJSON 文件
 //////////////////////////////////////////////////////
