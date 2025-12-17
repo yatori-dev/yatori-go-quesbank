@@ -57,7 +57,11 @@ func maxArray(arrs ...[]string) []string {
 // {"code":1,"data":{"question":"测试题目","answer":"用于检验学员受训后知识、技能以及绩效状况的一系列问题或评价方法。","times":98},"message":"请求成功"}
 func Request(token string, question entity.Question) *entity.Question {
 	resContent := qutils.RemoveLeadingLabel(question.Content)
-	jsonStr := questionRequest(token, resContent, qtype.Index(question.Type))
+	qIndex := qtype.Index(question.Type)
+	if qIndex == -1 { //防止溢出
+		qIndex = 0
+	}
+	jsonStr := questionRequest(token, resContent, qIndex)
 	//jsonStr := QuestionRequest(token, question.Content, question.Type)
 	json := gojsonq.New().JSONString(jsonStr)
 	if code, ok := json.Find("code").(float64); ok {
