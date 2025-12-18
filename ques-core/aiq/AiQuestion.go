@@ -44,23 +44,23 @@ func AggregationAIApi(url,
 
 	switch aiType {
 	case aitype.ChatGLM:
-		return ChatGLMChatReplyApi(model, apiKey, aiChatMessages, 3, nil)
+		return ChatGLMChatReplyApi(model, apiKey, aiChatMessages, 5, nil)
 	case aitype.XingHuo:
-		return XingHuoChatReplyApi(model, apiKey, aiChatMessages, 3, nil)
+		return XingHuoChatReplyApi(model, apiKey, aiChatMessages, 5, nil)
 	case aitype.TongYi:
-		return TongYiChatReplyApi(model, apiKey, aiChatMessages, 3, nil)
+		return TongYiChatReplyApi(model, apiKey, aiChatMessages, 5, nil)
 	case aitype.DouBao:
-		return DouBaoChatReplyApi(model, apiKey, aiChatMessages, 3, nil)
+		return DouBaoChatReplyApi(model, apiKey, aiChatMessages, 5, nil)
 	case aitype.OpenAi:
-		return OpenAiReplyApi(model, apiKey, aiChatMessages, 3, nil)
+		return OpenAiReplyApi(model, apiKey, aiChatMessages, 5, nil)
 	case aitype.MeTaAi:
-		return MetaAIReplyApi(model, apiKey, aiChatMessages, 3, nil)
+		return MetaAIReplyApi(model, apiKey, aiChatMessages, 5, nil)
 	case aitype.DeepSeek:
-		return DeepSeekChatReplyApi(model, apiKey, aiChatMessages, 3, nil)
+		return DeepSeekChatReplyApi(model, apiKey, aiChatMessages, 5, nil)
 	case aitype.Silicon:
 		return SiliconFlowReplyApi(model, apiKey, aiChatMessages, 5, nil)
 	case aitype.Other:
-		return OtherChatReplyApi(url, model, apiKey, aiChatMessages, 3, nil)
+		return OtherChatReplyApi(url, model, apiKey, aiChatMessages, 5, nil)
 	default:
 		return "", errors.New(string("AI Type: " + aiType))
 	}
@@ -99,10 +99,16 @@ func TongYiChatReplyApi(
 		return "", lastErr
 	}
 	if model == "" {
-		model = "qwen-plus"
+		model = "qwen-plus-latest"
+	}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
 	}
 	client := &http.Client{
-		Timeout: 30 * time.Second, // Set connection and read timeout
+		Transport: tr,
+		Timeout:   60 * time.Second, // Set connection and read timeout
 	}
 
 	url := "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
@@ -110,6 +116,7 @@ func TongYiChatReplyApi(
 		"model":       model,
 		"temperature": 0.2,
 		"messages":    aiChatMessages.Messages,
+		//"response_format": map[string]string{"type": "json_object"},
 	}
 
 	jsonData, err := json.Marshal(requestBody)
@@ -144,6 +151,11 @@ func TongYiChatReplyApi(
 		return TongYiChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to parse JSON response: %v  response body: %s", err, body))
 	}
 
+	//处理异常
+	resultMsg, ok := responseMap["message"].(string)
+	if ok && strings.Contains(resultMsg, "Request processing has failed") {
+		return TongYiChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("AI回复内容未找到，AI返回信息：%s", string(body)))
+	}
 	choices, ok := responseMap["choices"].([]interface{})
 	if !ok || len(choices) == 0 {
 		return "", fmt.Errorf("AI回复内容未找到，AI返回信息：" + string(body))
@@ -158,7 +170,20 @@ func TongYiChatReplyApi(
 	if !ok {
 		return "", fmt.Errorf("content field missing or not a string in response")
 	}
-
+	//json格式检查逻辑-----------------------------------------
+	var answers []string
+	err = json.Unmarshal([]byte(content), &answers)
+	if err != nil {
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "system",
+			Content: content,
+		})
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "user",
+			Content: "你刚才生成的回复未严格遵循json格式，我无法正常解析，请你重新生成。",
+		})
+		return TongYiChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("生成的回复无法正常解析成json:%s", string(body)))
+	}
 	return content, nil
 }
 
@@ -176,8 +201,14 @@ func ChatGLMChatReplyApi(
 	if retryNum < 0 { //重连次数用完直接返回
 		return "", lastErr
 	}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
 	client := &http.Client{
-		Timeout: 30 * time.Second, // Set connection and read timeout
+		Transport: tr,
+		Timeout:   60 * time.Second, // Set connection and read timeout
 	}
 
 	url := "https://open.bigmodel.cn/api/paas/v4/chat/completions"
@@ -185,6 +216,7 @@ func ChatGLMChatReplyApi(
 		"model":       model,
 		"temperature": 0.2,
 		"messages":    aiChatMessages.Messages,
+		//"response_format": map[string]string{"type": "json_object"},
 	}
 
 	jsonData, err := json.Marshal(requestBody)
@@ -219,6 +251,11 @@ func ChatGLMChatReplyApi(
 		return ChatGLMChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to parse JSON response: %v   response body: %s", err, body))
 	}
 
+	//处理异常
+	resultMsg, ok := responseMap["message"].(string)
+	if ok && strings.Contains(resultMsg, "Request processing has failed") {
+		return ChatGLMChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("AI回复内容未找到，AI返回信息：%s", string(body)))
+	}
 	choices, ok := responseMap["choices"].([]interface{})
 	if !ok || len(choices) == 0 {
 		return "", fmt.Errorf("AI回复内容未找到，AI返回信息：" + string(body))
@@ -232,6 +269,21 @@ func ChatGLMChatReplyApi(
 	content, ok := message["content"].(string)
 	if !ok {
 		return "", fmt.Errorf("content field missing or not a string in response")
+	}
+
+	//json格式检查逻辑-----------------------------------------
+	var answers []string
+	err = json.Unmarshal([]byte(content), &answers)
+	if err != nil {
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "system",
+			Content: content,
+		})
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "user",
+			Content: "你刚才生成的回复未严格遵循json格式，我无法正常解析，请你重新生成。",
+		})
+		return ChatGLMChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("生成的回复无法正常解析成json:%s", string(body)))
 	}
 
 	return content, nil
@@ -250,8 +302,14 @@ func XingHuoChatReplyApi(model,
 	if model == "" {
 		model = "generalv3.5" //默认模型
 	}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
 	client := &http.Client{
-		Timeout: 30 * time.Second, // Set connection and read timeout
+		Transport: tr,
+		Timeout:   60 * time.Second, // Set connection and read timeout
 	}
 
 	url := "https://spark-api-open.xf-yun.com/v1/chat/completions"
@@ -259,6 +317,7 @@ func XingHuoChatReplyApi(model,
 		"model":       model,
 		"temperature": 0.2,
 		"messages":    aiChatMessages.Messages,
+		//"response_format": map[string]string{"type": "json_object"},
 	}
 
 	jsonData, err := json.Marshal(requestBody)
@@ -295,7 +354,11 @@ func XingHuoChatReplyApi(model,
 		time.Sleep(100 * time.Millisecond)
 		return XingHuoChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to parse JSON response: %v   response body: %s", err, body))
 	}
-
+	//处理异常
+	resultMsg, ok := responseMap["message"].(string)
+	if ok && strings.Contains(resultMsg, "Request processing has failed") {
+		return XingHuoChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("AI回复内容未找到，AI返回信息：%s", string(body)))
+	}
 	choices, ok := responseMap["choices"].([]interface{})
 	if !ok || len(choices) == 0 {
 		//防止傻逼星火认为频繁调用报错的问题，踏马老子都加锁了还频繁调用，我频繁密码了
@@ -316,7 +379,20 @@ func XingHuoChatReplyApi(model,
 	if !ok {
 		return "", fmt.Errorf("content field missing or not a string in response")
 	}
-
+	//json格式检查逻辑-----------------------------------------
+	var answers []string
+	err = json.Unmarshal([]byte(content), &answers)
+	if err != nil {
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "system",
+			Content: content,
+		})
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "user",
+			Content: "你刚才生成的回复未严格遵循json格式，我无法正常解析，请你重新生成。",
+		})
+		return XingHuoChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("生成的回复无法正常解析成json:%s", string(body)))
+	}
 	return content, nil
 }
 
@@ -331,15 +407,22 @@ func DouBaoChatReplyApi(model,
 		return "", lastErr
 	}
 
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
 	client := &http.Client{
-		Timeout: 120 * time.Second, // Set connection and read timeout
+		Transport: tr,
+		Timeout:   60 * time.Second, // Set connection and read timeout
 	}
 
-	url := "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
+	urlStr := "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
 	requestBody := map[string]interface{}{
 		"model":       model,
 		"temperature": 0.2,
 		"messages":    aiChatMessages.Messages,
+		//"response_format": map[string]string{"type": "json_object"},
 	}
 
 	jsonData, err := json.Marshal(requestBody)
@@ -347,7 +430,7 @@ func DouBaoChatReplyApi(model,
 		return "", fmt.Errorf("failed to marshal JSON data: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", urlStr, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return "", fmt.Errorf("failed to create HTTP request: %v", err)
 	}
@@ -374,7 +457,11 @@ func DouBaoChatReplyApi(model,
 		time.Sleep(100 * time.Millisecond)
 		return DouBaoChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to parse JSON response: %v    response body: %s", err, body))
 	}
-
+	//处理异常
+	resultMsg, ok := responseMap["message"].(string)
+	if ok && strings.Contains(resultMsg, "Request processing has failed") {
+		return DouBaoChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("AI回复内容未找到，AI返回信息：%s", string(body)))
+	}
 	choices, ok := responseMap["choices"].([]interface{})
 	if !ok || len(choices) == 0 {
 		log.Printf("unexpected response structure: %v", responseMap)
@@ -390,7 +477,20 @@ func DouBaoChatReplyApi(model,
 	if !ok {
 		return "", fmt.Errorf("content field missing or not a string in response")
 	}
-
+	//json格式检查逻辑-----------------------------------------
+	var answers []string
+	err = json.Unmarshal([]byte(content), &answers)
+	if err != nil {
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "system",
+			Content: content,
+		})
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "user",
+			Content: "你刚才生成的回复未严格遵循json格式，我无法正常解析，请你重新生成。",
+		})
+		return DouBaoChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("生成的回复无法正常解析成json:%s", string(body)))
+	}
 	return content, nil
 }
 
@@ -405,8 +505,14 @@ func OpenAiReplyApi(model,
 		return "", lastErr
 	}
 
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
 	client := &http.Client{
-		Timeout: 120 * time.Second, // Set connection and read timeout
+		Transport: tr,
+		Timeout:   60 * time.Second, // Set connection and read timeout
 	}
 
 	url := "https://api.openai.com/v1/responses"
@@ -414,6 +520,7 @@ func OpenAiReplyApi(model,
 		"model":       model,
 		"temperature": 0.2,
 		"input":       aiChatMessages.Messages,
+		//"response_format": map[string]string{"type": "json_object"},
 	}
 
 	jsonData, err := json.Marshal(requestBody)
@@ -448,7 +555,11 @@ func OpenAiReplyApi(model,
 		time.Sleep(100 * time.Millisecond)
 		return OpenAiReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to parse JSON response: %v    response body: %s", err, body))
 	}
-
+	//处理异常
+	resultMsg, ok := responseMap["message"].(string)
+	if ok && strings.Contains(resultMsg, "Request processing has failed") {
+		return OpenAiReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("AI回复内容未找到，AI返回信息：%s", string(body)))
+	}
 	choices, ok := responseMap["choices"].([]interface{})
 	if !ok || len(choices) == 0 {
 		log.Printf("unexpected response structure: %v", responseMap)
@@ -464,7 +575,20 @@ func OpenAiReplyApi(model,
 	if !ok {
 		return "", fmt.Errorf("content field missing or not a string in response")
 	}
-
+	//json格式检查逻辑-----------------------------------------
+	var answers []string
+	err = json.Unmarshal([]byte(content), &answers)
+	if err != nil {
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "system",
+			Content: content,
+		})
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "user",
+			Content: "你刚才生成的回复未严格遵循json格式，我无法正常解析，请你重新生成。",
+		})
+		return OpenAiReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("生成的回复无法正常解析成json:%s", string(body)))
+	}
 	return content, nil
 }
 
@@ -479,8 +603,14 @@ func DeepSeekChatReplyApi(model,
 		return "", lastErr
 	}
 
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
 	client := &http.Client{
-		Timeout: 120 * time.Second, // Set connection and read timeout
+		Transport: tr,
+		Timeout:   60 * time.Second, // Set connection and read timeout
 	}
 	if model == "" {
 		model = "deepseek-chat" //默认模型
@@ -490,6 +620,7 @@ func DeepSeekChatReplyApi(model,
 		"model":       model,
 		"temperature": 0.2,
 		"messages":    aiChatMessages.Messages,
+		//"response_format": map[string]string{"type": "json_object"},
 	}
 
 	jsonData, err := json.Marshal(requestBody)
@@ -524,7 +655,11 @@ func DeepSeekChatReplyApi(model,
 		time.Sleep(100 * time.Millisecond)
 		return DeepSeekChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to parse JSON response: %v    response body: %s", err, body))
 	}
-
+	//处理异常
+	resultMsg, ok := responseMap["message"].(string)
+	if ok && strings.Contains(resultMsg, "Request processing has failed") {
+		return DeepSeekChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("AI回复内容未找到，AI返回信息：%s", string(body)))
+	}
 	choices, ok := responseMap["choices"].([]interface{})
 	if !ok || len(choices) == 0 {
 		log.Printf("unexpected response structure: %v", responseMap)
@@ -540,7 +675,20 @@ func DeepSeekChatReplyApi(model,
 	if !ok {
 		return "", fmt.Errorf("content field missing or not a string in response")
 	}
-
+	//json格式检查逻辑-----------------------------------------
+	var answers []string
+	err = json.Unmarshal([]byte(content), &answers)
+	if err != nil {
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "system",
+			Content: content,
+		})
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "user",
+			Content: "你刚才生成的回复未严格遵循json格式，我无法正常解析，请你重新生成。",
+		})
+		return DeepSeekChatReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("生成的回复无法正常解析成json:%s", string(body)))
+	}
 	return content, nil
 }
 
@@ -569,10 +717,10 @@ func SiliconFlowReplyApi(model,
 	}
 	url := "https://api.siliconflow.cn/v1/chat/completions"
 	requestBody := map[string]interface{}{
-		"model":           model,
-		"temperature":     0.2,
-		"messages":        aiChatMessages.Messages,
-		"response_format": map[string]string{"type": "json_object"},
+		"model":       model,
+		"temperature": 0.2,
+		"messages":    aiChatMessages.Messages,
+		//"response_format": map[string]string{"type": "json_object"},
 	}
 
 	jsonData, err := json.Marshal(requestBody)
@@ -609,11 +757,18 @@ func SiliconFlowReplyApi(model,
 	}
 	//处理异常
 	resultMsg, ok := responseMap["message"].(string)
-	if ok && strings.Contains(resultMsg, "Request processing has failed") {
-		return SiliconFlowReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("AI回复内容未找到，AI返回信息：%s", string(body)))
+	if ok {
+		if strings.Contains(resultMsg, "Request processing has failed") {
+			return SiliconFlowReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("AI回复内容未找到，AI返回信息：%s", string(body)))
+		} else if strings.Contains(resultMsg, `The API key format is incorrect`) { //有时候硅基流动会抽风
+			return SiliconFlowReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("AI回复内容未找到，AI返回信息：%s", string(body)))
+		}
 	}
 	choices, ok := responseMap["choices"].([]interface{})
 	if !ok || len(choices) == 0 {
+		//if strings.Contains(string(body),`"message":"The API key format is incorrect. Request id`){
+		//	return SiliconFlowReplyApi(model,)
+		//}
 		log.Printf("unexpected response structure: %v", responseMap)
 		return "", fmt.Errorf("AI回复内容未找到，AI返回信息：" + string(body))
 	}
@@ -627,77 +782,20 @@ func SiliconFlowReplyApi(model,
 	if !ok {
 		return "", fmt.Errorf("content field missing or not a string in response")
 	}
-
-	return content, nil
-}
-
-// OtherChatReplyApi 其他支持CHATGPT API格式的AI模型接入
-func OtherChatReplyApi(url,
-	model,
-	apiKey string,
-	aiChatMessages AIChatMessages,
-	retryNum int, /*最大重连次数*/
-	lastErr error,
-) (string, error) {
-	if retryNum < 0 { //重连次数用完直接返回
-		return "", lastErr
-	}
-	client := &http.Client{
-		Timeout: 40 * time.Second, // Set connection and read timeout
-	}
-	requestBody := map[string]interface{}{
-		"model":       model,
-		"temperature": 0.2,
-		"messages":    aiChatMessages.Messages,
-	}
-
-	jsonData, err := json.Marshal(requestBody)
+	//json格式检查逻辑-----------------------------------------
+	var answers []string
+	err = json.Unmarshal([]byte(content), &answers)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal JSON data: %v", err)
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "system",
+			Content: content,
+		})
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "user",
+			Content: "你刚才生成的回复未严格遵循json格式，我无法正常解析，请你重新生成。",
+		})
+		return SiliconFlowReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("生成的回复无法正常解析成json:%s", string(body)))
 	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", fmt.Errorf("failed to create HTTP request: %v", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		time.Sleep(100 * time.Millisecond)
-		return OtherChatReplyApi(url, model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to execute HTTP request: %v", err))
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		time.Sleep(100 * time.Millisecond)
-		return OtherChatReplyApi(url, model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to read response body: %v", err))
-	}
-
-	var responseMap map[string]interface{}
-	if err := json.Unmarshal(body, &responseMap); err != nil {
-		time.Sleep(100 * time.Millisecond)
-		return OtherChatReplyApi(url, model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to parse JSON response: %v    response body: %s", err, body))
-	}
-
-	choices, ok := responseMap["choices"].([]interface{})
-	if !ok || len(choices) == 0 {
-		return "", fmt.Errorf("AI回复内容未找到，AI返回信息：" + string(body))
-	}
-
-	message, ok := choices[0].(map[string]interface{})["message"].(map[string]interface{})
-	if !ok {
-		return "", fmt.Errorf("failed to parse message from response")
-	}
-
-	content, ok := message["content"].(string)
-	if !ok {
-		return "", fmt.Errorf("content field missing or not a string in response")
-	}
-
 	return content, nil
 }
 
@@ -732,7 +830,15 @@ func MetaAIReplyApi(model, apiKey string, aiChatMessages AIChatMessages, retryNu
 	}
 	payload := strings.NewReader(string(marshal))
 
-	client := &http.Client{}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   60 * time.Second, // Set connection and read timeout
+	}
 	req, err := http.NewRequest(method, url, payload)
 
 	if err != nil {
@@ -747,7 +853,7 @@ func MetaAIReplyApi(model, apiKey string, aiChatMessages AIChatMessages, retryNu
 
 	res, err := client.Do(req)
 	if err != nil {
-		return MetaAIReplyApi(model, apiKey, aiChatMessages, retryNum-1, lastErr)
+		return MetaAIReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to create HTTP request: %v", err))
 	}
 	defer res.Body.Close()
 
@@ -762,9 +868,123 @@ func MetaAIReplyApi(model, apiKey string, aiChatMessages AIChatMessages, retryNu
 		time.Sleep(100 * time.Millisecond)
 		return MetaAIReplyApi(model, apiKey, aiChatMessages, retryNum-1, lastErr)
 	}
+	//处理异常
+	resultMsg, ok := responseMap["message"].(string)
+	if ok && strings.Contains(resultMsg, "Request processing has failed") {
+		return MetaAIReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("AI回复内容未找到，AI返回信息：%s", string(body)))
+	}
 	response, ok := responseMap["answer"].(string)
 	if !ok || len(response) == 0 {
 		return "", fmt.Errorf(string(body))
 	}
+
+	//json格式检查逻辑-----------------------------------------
+	var answers []string
+	err = json.Unmarshal([]byte(response), &answers)
+	if err != nil {
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "system",
+			Content: response,
+		})
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "user",
+			Content: "你刚才生成的回复未严格遵循json格式，我无法正常解析，请你重新生成。",
+		})
+		return MetaAIReplyApi(model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("生成的回复无法正常解析成json:%s", string(body)))
+	}
 	return response, nil
+}
+
+// OtherChatReplyApi 其他支持CHATGPT API格式的AI模型接入
+func OtherChatReplyApi(url,
+	model,
+	apiKey string,
+	aiChatMessages AIChatMessages,
+	retryNum int, /*最大重连次数*/
+	lastErr error,
+) (string, error) {
+	if retryNum < 0 { //重连次数用完直接返回
+		return "", lastErr
+	}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   60 * time.Second, // Set connection and read timeout
+	}
+	requestBody := map[string]interface{}{
+		"model":       model,
+		"temperature": 0.2,
+		"messages":    aiChatMessages.Messages,
+		//"response_format": map[string]string{"type": "json_object"},
+	}
+
+	jsonData, err := json.Marshal(requestBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal JSON data: %v", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", fmt.Errorf("failed to create HTTP request: %v", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		time.Sleep(100 * time.Millisecond)
+		return OtherChatReplyApi(url, model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to execute HTTP request: %v", err))
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		time.Sleep(100 * time.Millisecond)
+		return OtherChatReplyApi(url, model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to read response body: %v", err))
+	}
+
+	var responseMap map[string]interface{}
+	if err := json.Unmarshal(body, &responseMap); err != nil {
+		time.Sleep(100 * time.Millisecond)
+		return OtherChatReplyApi(url, model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("failed to parse JSON response: %v    response body: %s", err, body))
+	}
+	//处理异常
+	resultMsg, ok := responseMap["message"].(string)
+	if ok && strings.Contains(resultMsg, "Request processing has failed") {
+		return OtherChatReplyApi(url, model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("AI回复内容未找到，AI返回信息：%s", string(body)))
+	}
+	choices, ok := responseMap["choices"].([]interface{})
+	if !ok || len(choices) == 0 {
+		return "", fmt.Errorf("AI回复内容未找到，AI返回信息：" + string(body))
+	}
+
+	message, ok := choices[0].(map[string]interface{})["message"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("failed to parse message from response")
+	}
+
+	content, ok := message["content"].(string)
+	if !ok {
+		return "", fmt.Errorf("content field missing or not a string in response")
+	}
+	//json格式检查逻辑-----------------------------------------
+	var answers []string
+	err = json.Unmarshal([]byte(content), &answers)
+	if err != nil {
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "system",
+			Content: content,
+		})
+		aiChatMessages.Messages = append(aiChatMessages.Messages, Message{
+			Role:    "user",
+			Content: "你刚才生成的回复未严格遵循json格式，我无法正常解析，请你重新生成。",
+		})
+		return OtherChatReplyApi(url, model, apiKey, aiChatMessages, retryNum-1, fmt.Errorf("生成的回复无法正常解析成json:%s", string(body)))
+	}
+	return content, nil
 }
